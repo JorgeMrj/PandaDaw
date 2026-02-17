@@ -17,4 +17,13 @@
       </Content>
     </ItemGroup>
 
+    <ItemGroup>
+      <Folder Include="Dto\" />
+      <Folder Include="Errors\" />
+      <Folder Include="mappers\" />
+      <Folder Include="models\" />
+      <Folder Include="repository\" />
+      <Folder Include="Services\" />
+    </ItemGroup>
+
 </Project>
