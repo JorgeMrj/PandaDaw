@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 namespace PandaBack.Models;
 
 [Table("usuarios")]
-[Index(nameof(Email), IsUnique = true)] // Email unico en la base de datos (ya configurado en IdentityUser)
+[Index(nameof(Email), IsUnique = true)]
 public class User : IdentityUser
 {
     // Propiedades customizadas del usuario

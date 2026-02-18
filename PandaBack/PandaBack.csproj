@@ -48,7 +48,6 @@
       <Folder Include="Validators\" />
       <Folder Include="mappers\" />
       <Folder Include="repository\" />
-      <Folder Include="Services\" />
     </ItemGroup>
 
 </Project>
