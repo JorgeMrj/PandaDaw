@@ -268,7 +268,11 @@ public class DataSeeder
             var admin = new User
             {
                 UserName = "admin",
+                NormalizedUserName = "ADMIN",
                 Email = "admin@pandadaw.com",
+                NormalizedEmail = "ADMIN@PANDADAW.COM",
+                EmailConfirmed = true,
+                SecurityStamp = Guid.NewGuid().ToString(),
                 Nombre = "Admin",
                 Apellidos = "Sistema",
                 Role = Role.Admin,
@@ -281,7 +285,11 @@ public class DataSeeder
             var usuario1 = new User
             {
                 UserName = "usuario1",
+                NormalizedUserName = "USUARIO1",
                 Email = "usuario1@pandadaw.com",
+                NormalizedEmail = "USUARIO1@PANDADAW.COM",
+                EmailConfirmed = true,
+                SecurityStamp = Guid.NewGuid().ToString(),
                 Nombre = "Juan",
                 Apellidos = "Pérez García",
                 Role = Role.User,
@@ -294,7 +302,11 @@ public class DataSeeder
             var usuario2 = new User
             {
                 UserName = "usuario2",
+                NormalizedUserName = "USUARIO2",
                 Email = "usuario2@pandadaw.com",
+                NormalizedEmail = "USUARIO2@PANDADAW.COM",
+                EmailConfirmed = true,
+                SecurityStamp = Guid.NewGuid().ToString(),
                 Nombre = "María",
                 Apellidos = "López Martínez",
                 Role = Role.User,
