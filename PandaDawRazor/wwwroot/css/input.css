@@ -2,38 +2,60 @@
 @plugin "daisyui";
 
 @plugin "daisyui/theme" {
-  name: "azul";
+  name: "pandadaw";
   default: true;
   prefersdark: false;
   color-scheme: "light";
-  --color-base-100: oklch(97% 0.021 166.113);
-  --color-base-200: oklch(95% 0.052 163.051);
-  --color-base-300: oklch(90% 0.093 164.15);
-  --color-base-content: oklch(37% 0.077 168.94);
-  --color-primary: oklch(78% 0.115 274.713);
-  --color-primary-content: oklch(25% 0.09 281.288);
-  --color-secondary: oklch(87% 0.01 258.338);
-  --color-secondary-content: oklch(13% 0.028 261.692);
-  --color-accent: oklch(0% 0 0);
-  --color-accent-content: oklch(100% 0 0);
-  --color-neutral: oklch(26% 0.051 172.552);
-  --color-neutral-content: oklch(97% 0.021 166.113);
-  --color-info: oklch(62% 0.214 259.815);
-  --color-info-content: oklch(97% 0.014 254.604);
-  --color-success: oklch(76% 0.233 130.85);
-  --color-success-content: oklch(98% 0.031 120.757);
-  --color-warning: oklch(79% 0.184 86.047);
-  --color-warning-content: oklch(98% 0.026 102.212);
-  --color-error: oklch(64% 0.246 16.439);
-  --color-error-content: oklch(96% 0.015 12.422);
-  --radius-selector: 2rem;
-  --radius-field: 2rem;
-  --radius-box: 2rem;
-  --size-selector: 0.21875rem;
-  --size-field: 0.21875rem;
-  --border: 2px;
+  /* Base - Fondo muy claro con toques cálidos */
+  --color-base-100: oklch(99% 0.005 270);
+  --color-base-200: oklch(96% 0.008 270);
+  --color-base-300: oklch(90% 0.015 270);
+  --color-base-content: oklch(20% 0.02 270);
+  /* Primary - Violeta/Púrpura elegante */
+  --color-primary: oklch(50% 0.25 285);
+  --color-primary-content: oklch(100% 0 0);
+  /* Secondary - Rosa vibrante */
+  --color-secondary: oklch(65% 0.22 350);
+  --color-secondary-content: oklch(100% 0 0);
+  /* Accent - Cyan/Turquesa fresco */
+  --color-accent: oklch(70% 0.15 195);
+  --color-accent-content: oklch(15% 0.02 195);
+  /* Neutral - Slate oscuro */
+  --color-neutral: oklch(22% 0.025 270);
+  --color-neutral-content: oklch(98% 0 0);
+  /* Estados */
+  --color-info: oklch(62% 0.2 240);
+  --color-info-content: oklch(100% 0 0);
+  --color-success: oklch(68% 0.19 155);
+  --color-success-content: oklch(100% 0 0);
+  --color-warning: oklch(82% 0.16 80);
+  --color-warning-content: oklch(20% 0.03 80);
+  --color-error: oklch(58% 0.24 25);
+  --color-error-content: oklch(100% 0 0);
+  /* Bordes redondeados elegantes */
+  --radius-selector: 0.75rem;
+  --radius-field: 0.625rem;
+  --radius-box: 1rem;
+  --size-selector: 0.25rem;
+  --size-field: 0.25rem;
+  --border: 1px;
   --depth: 1;
   --noise: 0;
 }
 
+/* Estilos personalizados adicionales */
+.card {
+  transition: all 0.3s ease;
+}
 
+.card:hover {
+  transform: translateY(-4px);
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, oklch(52% 0.25 285), oklch(48% 0.22 300));
+}
+
+.btn-primary:hover {
+  background: linear-gradient(135deg, oklch(48% 0.25 285), oklch(44% 0.22 300));
+}

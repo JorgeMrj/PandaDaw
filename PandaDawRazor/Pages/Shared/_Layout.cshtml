@@ -1,5 +1,5 @@
 ﻿<!DOCTYPE html>
-<html lang="es" data-theme="azul">
+<html lang="es" data-theme="pandadaw">
 <head>
     <meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
@@ -7,56 +7,62 @@
     <link rel="stylesheet" href="~/css/output.css" asp-append-version="true"/>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"/>
 </head>
-<body class="bg-base-200 min-h-screen">
+<body class="bg-base-200 min-h-screen flex flex-col">
     <!-- Navbar -->
-    <div class="navbar bg-base-300 text-primary-content px-4 gap-2 shadow-lg sticky top-0 z-50">
+    <nav class="navbar bg-base-100 border-b border-base-300 px-4 lg:px-8 sticky top-0 z-50 shadow-sm">
         <!-- Logo -->
         <div class="flex-none">
-            <a asp-page="/Index" class="btn btn-ghost text-xl font-bold">
-                <i class="fa-solid fa-paw text-primary"></i>
-                PandaDaw
+            <a asp-page="/Index" class="flex items-center gap-2 text-xl font-bold text-primary hover:opacity-80 transition-opacity">
+                <i class="fa-solid fa-paw"></i>
+                <span>PandaDaw</span>
             </a>
         </div>
 
         <!-- Buscador centrado -->
-        <div class="flex-1 flex justify-center px-2">
-            <form method="get" asp-page="/Index" class="w-full max-w-md">
-                <input type="text" name="buscar" placeholder="Buscar productos..." 
-                       class="input input-primary input-sm w-full" />
+        <div class="flex-1 flex justify-center px-4">
+            <form method="get" asp-page="/Index" class="w-full max-w-lg">
+                <div class="relative">
+                    <input type="text" name="buscar" placeholder="Buscar productos..." 
+                           class="input input-bordered w-full pl-10 bg-base-200 focus:bg-base-100" />
+                    <i class="fa-solid fa-search absolute left-3 top-1/2 -translate-y-1/2 text-base-content/40"></i>
+                </div>
             </form>
         </div>
 
         <!-- Iconos derecha -->
-        <div class="flex-none flex items-center gap-1">
+        <div class="flex-none flex items-center gap-2">
             <!-- Favoritos -->
-            <a asp-page="/Favoritos" class="btn btn-ghost btn-sm" title="Favoritos">
-                <i class="fa-regular fa-heart text-lg"></i>
+            <a asp-page="/Favoritos" class="btn btn-ghost btn-circle" title="Favoritos">
+                <i class="fa-regular fa-heart text-xl"></i>
             </a>
 
             <!-- Carrito -->
-            <a asp-page="/Carrito" class="btn btn-ghost btn-sm" title="Carrito">
-                <i class="fa-solid fa-cart-shopping text-lg"></i>
+            <a asp-page="/Carrito" class="btn btn-ghost btn-circle" title="Carrito">
+                <i class="fa-solid fa-shopping-cart text-xl"></i>
             </a>
 
             <!-- Usuario -->
             @if (Context.Session.GetString("Token") != null)
             {
                 <div class="dropdown dropdown-end">
-                    <button tabindex="0" class="btn btn-ghost btn-sm">
-                        <div class="avatar">
-                            <div class="w-8 rounded-full">
-                                <img src="https://img.daisyui.com/images/profile/demo/yellingcat@192.webp" alt="Avatar" />
-                            </div>
+                    <button tabindex="0" class="btn btn-ghost btn-circle avatar">
+                        <div class="w-9 rounded-full ring ring-primary ring-offset-base-100 ring-offset-2">
+                            <img src="https://api.dicebear.com/7.x/initials/svg?seed=@Context.Session.GetString("UserName")" alt="Avatar" />
                         </div>
-                        <span class="hidden sm:inline ml-1">@Context.Session.GetString("UserName")</span>
                     </button>
-                    <ul tabindex="0" class="dropdown-content z-50 menu p-2 shadow bg-base-100 rounded-box w-52 mt-2">
+                    <ul tabindex="0" class="dropdown-content menu bg-base-100 rounded-box z-50 w-52 p-2 shadow-lg border border-base-300 mt-3">
+                        <li class="menu-title px-4 py-2">
+                            <span class="text-xs text-base-content/60">@Context.Session.GetString("UserName")</span>
+                        </li>
+                        @if (Context.Session.GetString("UserRole") == "Admin")
+                        {
+                            <li><a asp-page="/AdminPanel"><i class="fa-solid fa-gear mr-2"></i>Panel Admin</a></li>
+                        }
                         <li><a asp-page="/Pedidos"><i class="fa-solid fa-box mr-2"></i>Mis Pedidos</a></li>
                         <li><a asp-page="/Favoritos"><i class="fa-solid fa-heart mr-2"></i>Favoritos</a></li>
-                        <li class="divider"></li>
-                        <li>
+                        <li class="border-t border-base-300 mt-2 pt-2">
                             <form method="post" asp-page="/Login" asp-page-handler="Logout">
-                                <button type="submit" class="w-full text-left">
+                                <button type="submit" class="w-full text-left text-error">
                                     <i class="fa-solid fa-right-from-bracket mr-2"></i>Cerrar sesión
                                 </button>
                             </form>
@@ -72,18 +78,21 @@
                 </a>
             }
         </div>
-    </div>
+    </nav>
 
     <!-- Contenido principal -->
-    <main>
+    <main class="flex-1">
         @RenderBody()
     </main>
 
     <!-- Footer -->
-    <footer class="footer footer-center p-6 bg-base-300 text-base-content mt-auto">
+    <footer class="footer footer-center p-8 bg-base-100 border-t border-base-300 text-base-content">
         <aside>
-            <p class="font-bold">PandaDaw &copy; 2026</p>
-            <p>Tu tienda de música digital</p>
+            <div class="flex items-center gap-2 text-2xl font-bold text-primary mb-2">
+                <i class="fa-solid fa-paw"></i>
+                <span>PandaDaw</span>
+            </div>
+            <p class="text-base-content/60">Tu tienda de música digital &copy; 2026</p>
         </aside>
     </footer>
 

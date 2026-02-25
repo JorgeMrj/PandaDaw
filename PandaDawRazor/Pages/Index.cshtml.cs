@@ -61,8 +61,8 @@ public class IndexModel : PageModel
         Productos = Productos.Where(p => !p.IsDeleted).ToList();
 
         // Cargar favoritos del usuario si está autenticado
-        var userIdStr = HttpContext.Session.GetString("UserId");
-        if (!string.IsNullOrEmpty(userIdStr) && long.TryParse(userIdStr, out var userId))
+        var userId = HttpContext.Session.GetString("UserId");
+        if (!string.IsNullOrEmpty(userId))
         {
             var favResult = await _favoritoService.GetUserFavoritosAsync(userId);
             if (favResult.IsSuccess)
@@ -74,8 +74,8 @@ public class IndexModel : PageModel
 
     public async Task<IActionResult> OnPostAddToCartAsync(long productoId)
     {
-        var userIdStr = HttpContext.Session.GetString("UserId");
-        if (string.IsNullOrEmpty(userIdStr) || !long.TryParse(userIdStr, out var userId))
+        var userId = HttpContext.Session.GetString("UserId");
+        if (string.IsNullOrEmpty(userId))
         {
             return RedirectToPage("/Login");
         }
@@ -86,8 +86,8 @@ public class IndexModel : PageModel
 
     public async Task<IActionResult> OnPostToggleFavoritoAsync(long productoId, long? favoritoId)
     {
-        var userIdStr = HttpContext.Session.GetString("UserId");
-        if (string.IsNullOrEmpty(userIdStr) || !long.TryParse(userIdStr, out var userId))
+        var userId = HttpContext.Session.GetString("UserId");
+        if (string.IsNullOrEmpty(userId))
         {
             return RedirectToPage("/Login");
         }

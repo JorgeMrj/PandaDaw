@@ -22,16 +22,16 @@ public class PagoModel : PageModel
     public VentaResponseDto? VentaCreada { get; set; }
     public string? ErrorMessage { get; set; }
     
-    public long? UserId => long.TryParse(HttpContext.Session.GetString("UserId"), out var id) ? id : null;
+    public string? UserId => HttpContext.Session.GetString("UserId");
 
     public async Task<IActionResult> OnGetAsync()
     {
-        if (!UserId.HasValue)
+        if (string.IsNullOrEmpty(UserId))
         {
             return RedirectToPage("/Login");
         }
 
-        var result = await _carritoService.GetCarritoByUserIdAsync(UserId.Value);
+        var result = await _carritoService.GetCarritoByUserIdAsync(UserId);
         if (result.IsSuccess)
         {
             Carrito = result.Value;
@@ -50,12 +50,12 @@ public class PagoModel : PageModel
 
     public async Task<IActionResult> OnPostConfirmarPagoAsync()
     {
-        if (!UserId.HasValue)
+        if (string.IsNullOrEmpty(UserId))
         {
             return RedirectToPage("/Login");
         }
 
-        var ventaResult = await _ventaService.CreateVentaFromCarritoAsync(UserId.Value);
+        var ventaResult = await _ventaService.CreateVentaFromCarritoAsync(UserId);
         
         if (ventaResult.IsSuccess)
         {
@@ -66,7 +66,7 @@ public class PagoModel : PageModel
         else
         {
             ErrorMessage = ventaResult.Error.Message;
-            var carritoResult = await _carritoService.GetCarritoByUserIdAsync(UserId.Value);
+            var carritoResult = await _carritoService.GetCarritoByUserIdAsync(UserId);
             if (carritoResult.IsSuccess)
             {
                 Carrito = carritoResult.Value;
