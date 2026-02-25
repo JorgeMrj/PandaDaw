@@ -58,9 +58,14 @@ public class PagoModel : PageModel
             return RedirectToPage("/Login");
         }
 
-        var ventaResult = await _ventaService.CreateVentaFromCarritoAsync(UserId);
-        
-        if (ventaResult.IsSuccess)
+        // Construir las URLs de éxito y cancelación para Stripe
+        var baseUrl = $"{Request.Scheme}://{Request.Host}";
+        var successUrl = $"{baseUrl}/PagoExitoso";
+        var cancelUrl = $"{baseUrl}/Pago";
+
+        var stripeResult = await _stripeService.CreateCheckoutSessionAsync(UserId, successUrl, cancelUrl);
+
+        if (stripeResult.IsSuccess)
         {
             PagoExitoso = true;
             VentaCreada = ventaResult.Value;
@@ -80,14 +85,13 @@ public class PagoModel : PageModel
         }
         else
         {
-            ErrorMessage = ventaResult.Error.Message;
+            ErrorMessage = stripeResult.Error.Message;
             var carritoResult = await _carritoService.GetCarritoByUserIdAsync(UserId);
             if (carritoResult.IsSuccess)
             {
                 Carrito = carritoResult.Value;
             }
+            return Page();
         }
-
-        return Page();
     }
 }
