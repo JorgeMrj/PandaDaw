@@ -2,38 +2,32 @@
 @inject NotificacionService NotificacionService
 @implements IDisposable
 
-<!-- Contenedor fijo de notificaciones toast - esquina superior derecha -->
-<div class="fixed top-4 right-4 z-[9999] flex flex-col gap-3 pointer-events-none max-w-sm w-full" style="transform: translateX(0);">
+<div class="fixed top-4 right-4 z-[9999] flex flex-col gap-3 pointer-events-none max-w-sm w-full">
     @foreach (var notif in notificaciones.ToList())
     {
         <div class="pointer-events-auto transform transition-all duration-300 ease-out"
              style="animation: toastSlideIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)">
-            <div class="rounded-2xl shadow-2xl border backdrop-blur-md p-4 flex items-start gap-3 overflow-hidden
-                        @GetContainerClass(notif.Tipo)"
-                 style="position: relative;">
-                <!-- Barra lateral de color -->
-                <div class="absolute left-0 top-0 bottom-0 w-1 rounded-l-2xl @GetBarColor(notif.Tipo)"></div>
+            <div class="rounded-2xl shadow-2xl border-2 p-4 flex items-start gap-3 overflow-hidden relative
+                        @GetContainerClass(notif.Tipo)">
+                <div class="absolute left-0 top-0 bottom-0 w-1.5 rounded-l-xl @GetBarColor(notif.Tipo)"></div>
                 
-                <!-- Icono con fondo -->
-                <div class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 @GetIconBgClass(notif.Tipo)">
-                    <i class="@notif.Icono text-lg @GetIconColorClass(notif.Tipo)"></i>
+                <div class="w-10 h-10 rounded-lg flex items-center justify-center shrink-0 @GetIconBgClass(notif.Tipo)">
+                    <i class="@notif.Icono @GetIconColorClass(notif.Tipo)"></i>
                 </div>
 
-                <!-- Contenido -->
                 <div class="flex-1 min-w-0">
-                    <p class="font-bold text-sm leading-tight text-base-content">@notif.Titulo</p>
-                    <p class="text-xs opacity-70 mt-0.5 leading-snug text-base-content/80">@notif.Mensaje</p>
+                    <p class="font-bold text-sm">@notif.Titulo</p>
+                    <p class="text-xs mt-0.5 opacity-80">@notif.Mensaje</p>
+                    <p class="text-[10px] opacity-50 mt-1">@notif.Fecha.ToString("HH:mm")</p>
                 </div>
 
-                <!-- Botón cerrar -->
-                <button class="btn btn-ghost btn-xs btn-circle opacity-50 hover:opacity-100 hover:bg-base-200/50 shrink-0 -mt-1 -mr-1"
+                <button class="btn btn-ghost btn-xs btn-circle opacity-50 hover:opacity-100 shrink-0"
                         @onclick="() => CerrarNotificacion(notif)">
-                    <i class="fa-solid fa-xmark text-xs"></i>
+                    <i class="fa-solid fa-xmark"></i>
                 </button>
                 
-                <!-- Barra de progreso animada -->
-                <div class="absolute bottom-0 left-0 right-0 h-1 bg-base-200/30">
-                    <div class="h-full @GetProgressBarColor(notif.Tipo) animate-shrink-width"></div>
+                <div class="absolute bottom-0 left-0 right-0 h-1 bg-base-300/30">
+                    <div class="h-full @GetProgressBarColor(notif.Tipo)" style="animation: shrink-width 4s linear forwards;"></div>
                 </div>
             </div>
         </div>
@@ -42,34 +36,12 @@
 
 <style>
     @@keyframes toastSlideIn {
-        from {
-            opacity: 0;
-            transform: translateX(120%) scale(0.8);
-        }
-        to {
-            opacity: 1;
-            transform: translateX(0) scale(1);
-        }
+        from { opacity: 0; transform: translateX(120%); }
+        to { opacity: 1; transform: translateX(0); }
     }
-
-    @@keyframes toastSlideOut {
-        from {
-            opacity: 1;
-            transform: translateX(0) scale(1);
-        }
-        to {
-            opacity: 0;
-            transform: translateX(120%) scale(0.8);
-        }
-    }
-
     @@keyframes shrink-width {
         from { width: 100%; }
         to { width: 0%; }
-    }
-
-    .animate-shrink-width {
-        animation: shrink-width 4s linear forwards;
     }
 </style>
 
@@ -93,7 +65,6 @@
             notif.Fecha = DateTime.Now;
             notificaciones.Add(notif);
             StateHasChanged();
-
             _ = AutoCerrar(notif);
         });
     }
@@ -117,11 +88,11 @@
 
     private string GetContainerClass(string tipo) => tipo switch
     {
-        "success" => "bg-success/95 border-success/30",
-        "warning" => "bg-warning/95 border-warning/30",
-        "error"   => "bg-error/95 border-error/30",
-        "info"    => "bg-info/95 border-info/30",
-        _         => "bg-base-100/95 border-base-300/30"
+        "success" => "bg-white border-success",
+        "warning" => "bg-white border-warning", 
+        "error"   => "bg-white border-error",
+        "info"    => "bg-white border-info",
+        _         => "bg-white border-primary"
     };
 
     private string GetBarColor(string tipo) => tipo switch
@@ -135,11 +106,11 @@
 
     private string GetIconBgClass(string tipo) => tipo switch
     {
-        "success" => "bg-success/20",
-        "warning" => "bg-warning/20",
-        "error"   => "bg-error/20",
-        "info"    => "bg-info/20",
-        _         => "bg-primary/20"
+        "success" => "bg-success/10",
+        "warning" => "bg-warning/10",
+        "error"   => "bg-error/10",
+        "info"    => "bg-info/10",
+        _         => "bg-primary/10"
     };
 
     private string GetIconColorClass(string tipo) => tipo switch
