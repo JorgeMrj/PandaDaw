@@ -36,13 +36,13 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '10.0'
-      
+
       - run: dotnet run --project PandaBack/PandaBack.csproj &
-      
+
       - run: sleep 10
 
       - name: Run Bruno Tests
-          run: cd PandaDaw-BrunoTest && npx @usebruno/cli run --env local
+        run: cd PandaDaw-BrunoTest && npx @usebruno/cli run --env local
 
   playwright:
     name: Playwright
@@ -53,6 +53,11 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '10.0'
+      
+      - run: dotnet run --project PandaBack/PandaBack.csproj &
+      - run: dotnet run --project PandaDawRazor/PandaDawRazor.csproj &
+      - run: sleep 15
+
       - run: dotnet build PandaDaw-Playwright/PandaDaw-Playwright.csproj
       - run: pwsh PandaDaw-Playwright/bin/Debug/net10.0/playwright.ps1 install --with-deps
       - run: dotnet test PandaDaw-Playwright/PandaDaw-Playwright.csproj --verbosity normal
