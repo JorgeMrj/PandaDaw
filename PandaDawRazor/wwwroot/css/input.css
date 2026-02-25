@@ -6,27 +6,27 @@
   default: true;
   prefersdark: false;
   color-scheme: "light";
-  /* Base - Fondo muy claro con toques cálidos */
-  --color-base-100: oklch(99% 0.005 270);
-  --color-base-200: oklch(96% 0.008 270);
-  --color-base-300: oklch(90% 0.015 270);
-  --color-base-content: oklch(20% 0.02 270);
-  /* Primary - Violeta/Púrpura elegante */
-  --color-primary: oklch(50% 0.25 285);
+  /* Base - Fondo blanco/verde muy claro */
+  --color-base-100: oklch(99.5% 0.002 160);
+  --color-base-200: oklch(97% 0.005 160);
+  --color-base-300: oklch(92% 0.01 160);
+  --color-base-content: oklch(18% 0.015 160);
+  /* Primary - Verde fresco y moderno */
+  --color-primary: oklch(55% 0.22 155);
   --color-primary-content: oklch(100% 0 0);
-  /* Secondary - Rosa vibrante */
-  --color-secondary: oklch(65% 0.22 350);
-  --color-secondary-content: oklch(100% 0 0);
-  /* Accent - Cyan/Turquesa fresco */
-  --color-accent: oklch(70% 0.15 195);
-  --color-accent-content: oklch(15% 0.02 195);
-  /* Neutral - Slate oscuro */
-  --color-neutral: oklch(22% 0.025 270);
+  /* Secondary - Verde claro suave */
+  --color-secondary: oklch(72% 0.12 150);
+  --color-secondary-content: oklch(15% 0.01 160);
+  /* Accent - Verde esmeralda elegante */
+  --color-accent: oklch(60% 0.18 160);
+  --color-accent-content: oklch(100% 0 0);
+  /* Neutral - Gris oscuro */
+  --color-neutral: oklch(24% 0.02 160);
   --color-neutral-content: oklch(98% 0 0);
   /* Estados */
   --color-info: oklch(62% 0.2 240);
   --color-info-content: oklch(100% 0 0);
-  --color-success: oklch(68% 0.19 155);
+  --color-success: oklch(70% 0.2 160);
   --color-success-content: oklch(100% 0 0);
   --color-warning: oklch(82% 0.16 80);
   --color-warning-content: oklch(20% 0.03 80);
@@ -46,16 +46,103 @@
 /* Estilos personalizados adicionales */
 .card {
   transition: all 0.3s ease;
+  background: linear-gradient(135deg, oklch(99.5% 0.002 160), oklch(97% 0.005 160));
+  border: 1px solid oklch(90% 0.01 160);
 }
 
 .card:hover {
   transform: translateY(-4px);
+  box-shadow: 0 12px 24px rgba(34, 197, 94, 0.15);
+}
+
+/* Mejoras para cards de productos */
+.card-body {
+  background: linear-gradient(180deg, oklch(99.5% 0.002 160) 0%, oklch(98% 0.003 160) 100%);
+}
+
+.card-body p {
+  color: oklch(35% 0.01 160);
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, oklch(52% 0.25 285), oklch(48% 0.22 300));
+  background: linear-gradient(135deg, oklch(55% 0.22 155), oklch(52% 0.2 160)) !important;
+  border: none;
+  box-shadow: 0 4px 8px rgba(34, 197, 94, 0.2);
 }
 
 .btn-primary:hover {
-  background: linear-gradient(135deg, oklch(48% 0.25 285), oklch(44% 0.22 300));
+  background: linear-gradient(135deg, oklch(52% 0.22 155), oklch(48% 0.2 160)) !important;
+  box-shadow: 0 8px 16px rgba(34, 197, 94, 0.25);
 }
+
+.btn-primary:active {
+  background: linear-gradient(135deg, oklch(48% 0.22 155), oklch(45% 0.2 160)) !important;
+}
+
+.btn-ghost {
+  color: oklch(55% 0.22 155);
+}
+
+.btn-ghost:hover {
+  background: oklch(92% 0.01 160);
+  color: oklch(52% 0.22 155);
+}
+
+/* Estilos para botones de categoría */
+.btn-sm {
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+
+/* Enfasis en links */
+a {
+  color: oklch(55% 0.22 155);
+}
+
+a:hover {
+  color: oklch(52% 0.22 155);
+}
+
+/* Sombras suaves verdes */
+.shadow-sm {
+  box-shadow: 0 4px 12px rgba(34, 197, 94, 0.1);
+}
+
+.shadow {
+  box-shadow: 0 8px 16px rgba(34, 197, 94, 0.12);
+}
+
+/* Badges y etiquetas */
+.badge {
+  background: linear-gradient(135deg, oklch(72% 0.12 150), oklch(70% 0.1 155));
+  border: none;
+}
+
+.badge-primary {
+  background: linear-gradient(135deg, oklch(55% 0.22 155), oklch(52% 0.2 160)) !important;
+}
+
+/* Inputs y campos de formulario */
+input, textarea, select {
+  border-color: oklch(90% 0.01 160);
+}
+
+input:focus, textarea:focus, select:focus {
+  border-color: oklch(55% 0.22 155);
+  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.1);
+}
+
+/* Tipografía mejorada */
+.text-primary {
+  color: oklch(55% 0.22 155) !important;
+  font-weight: 600;
+}
+
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  color: oklch(25% 0.01 160);
+}
+
