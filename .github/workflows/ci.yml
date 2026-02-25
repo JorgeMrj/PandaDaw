@@ -37,7 +37,7 @@ jobs:
         with:
           dotnet-version: '10.0'
 
-      - run: dotnet run --project PandaBack/PandaBack.csproj &
+      - run: dotnet run --project PandaBack/PandaBack.csproj --launch-profile "http" &
 
       - run: sleep 10
 
@@ -53,8 +53,8 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '10.0'
-      
-      - run: dotnet run --project PandaBack/PandaBack.csproj &
+
+      - run: dotnet run --project PandaBack/PandaBack.csproj --launch-profile "http" &
       - run: dotnet run --project PandaDawRazor/PandaDawRazor.csproj &
       - run: sleep 15
 
