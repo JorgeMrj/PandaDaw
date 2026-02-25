@@ -6,36 +6,43 @@
   default: true;
   prefersdark: false;
   color-scheme: "light";
-  /* Base - Fondo blanco/verde muy claro */
-  --color-base-100: oklch(99.5% 0.002 160);
-  --color-base-200: oklch(97% 0.005 160);
-  --color-base-300: oklch(92% 0.01 160);
-  --color-base-content: oklch(18% 0.015 160);
-  /* Primary - Verde fresco y moderno */
-  --color-primary: oklch(55% 0.22 155);
+
+  /* ── Base: blancos ultra-cálidos, atmósfera orgánica ── */
+  --color-base-100: oklch(99% 0.003 140);
+  --color-base-200: oklch(97% 0.007 145);
+  --color-base-300: oklch(93% 0.012 148);
+  --color-base-content: oklch(16% 0.015 158);
+
+  /* ── Primary: bosque esmeralda, profundo y sofisticado ── */
+  --color-primary: oklch(45% 0.16 160);
   --color-primary-content: oklch(100% 0 0);
-  /* Secondary - Verde claro suave */
-  --color-secondary: oklch(72% 0.12 150);
-  --color-secondary-content: oklch(15% 0.01 160);
-  /* Accent - Verde esmeralda elegante */
-  --color-accent: oklch(60% 0.18 160);
-  --color-accent-content: oklch(100% 0 0);
-  /* Neutral - Gris oscuro */
-  --color-neutral: oklch(24% 0.02 160);
-  --color-neutral-content: oklch(98% 0 0);
-  /* Estados */
-  --color-info: oklch(62% 0.2 240);
+
+  /* ── Secondary: jade etéreo ── */
+  --color-secondary: oklch(62% 0.1 150);
+  --color-secondary-content: oklch(14% 0.01 158);
+
+  /* ── Accent: ámbar dorado orgánico ── */
+  --color-accent: oklch(76% 0.13 80);
+  --color-accent-content: oklch(20% 0.04 78);
+
+  /* ── Neutral: grafito con aliento verde ── */
+  --color-neutral: oklch(20% 0.018 158);
+  --color-neutral-content: oklch(97% 0 0);
+
+  /* ── Estados ── */
+  --color-info: oklch(56% 0.18 248);
   --color-info-content: oklch(100% 0 0);
-  --color-success: oklch(70% 0.2 160);
+  --color-success: oklch(62% 0.19 152);
   --color-success-content: oklch(100% 0 0);
-  --color-warning: oklch(82% 0.16 80);
-  --color-warning-content: oklch(20% 0.03 80);
-  --color-error: oklch(58% 0.24 25);
+  --color-warning: oklch(78% 0.16 78);
+  --color-warning-content: oklch(20% 0.05 78);
+  --color-error: oklch(52% 0.24 25);
   --color-error-content: oklch(100% 0 0);
-  /* Bordes redondeados elegantes */
-  --radius-selector: 0.75rem;
-  --radius-field: 0.625rem;
-  --radius-box: 1rem;
+
+  /* ── Geometría suave & redondeada ── */
+  --radius-selector: 0.875rem;
+  --radius-field: 0.75rem;
+  --radius-box: 1.25rem;
   --size-selector: 0.25rem;
   --size-field: 0.25rem;
   --border: 1px;
@@ -43,106 +50,400 @@
   --noise: 0;
 }
 
-/* Estilos personalizados adicionales */
+/* ═══════════════════════════════════════════════════════════
+   PANDADAW — EMERALD ESSENCE DESIGN SYSTEM v2
+   Un sistema visual premium, limpio y cohesivo
+   ═══════════════════════════════════════════════════════════ */
+
+/* ── Tipografía & antialiasing ── */
+body {
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background: linear-gradient(
+    165deg,
+    oklch(97.5% 0.006 145) 0%,
+    oklch(98.5% 0.003 120) 100%
+  );
+  min-height: 100vh;
+}
+
+/* ══════════ CARDS ══════════ */
 .card {
-  transition: all 0.3s ease;
-  background: linear-gradient(135deg, oklch(99.5% 0.002 160), oklch(97% 0.005 160));
-  border: 1px solid oklch(90% 0.01 160);
+  background: oklch(99.5% 0.002 140);
+  border: 1px solid oklch(93% 0.01 148 / 0.7);
+  transition:
+    transform 0.4s cubic-bezier(0.22, 0.61, 0.36, 1),
+    box-shadow 0.4s cubic-bezier(0.22, 0.61, 0.36, 1),
+    border-color 0.3s ease;
 }
 
 .card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 12px 24px rgba(34, 197, 94, 0.15);
+  transform: translateY(-5px);
+  border-color: oklch(85% 0.04 155);
+  box-shadow:
+    0 24px 48px -12px oklch(45% 0.08 160 / 0.1),
+    0 12px 20px -8px oklch(45% 0.06 160 / 0.06);
 }
 
-/* Mejoras para cards de productos */
+/* Cards que NO deberían moverse al hover (formularios, sidebars, stats) */
+.card-static,
+.stat,
+dialog .card,
+.sticky .card,
+dialog .modal-box {
+  transform: none !important;
+  animation: none !important;
+}
+
 .card-body {
-  background: linear-gradient(180deg, oklch(99.5% 0.002 160) 0%, oklch(98% 0.003 160) 100%);
+  background: transparent;
 }
 
 .card-body p {
-  color: oklch(35% 0.01 160);
+  color: oklch(40% 0.012 158);
 }
 
+/* ══════════ BOTONES ══════════ */
 .btn-primary {
-  background: linear-gradient(135deg, oklch(55% 0.22 155), oklch(52% 0.2 160)) !important;
-  border: none;
-  box-shadow: 0 4px 8px rgba(34, 197, 94, 0.2);
+  background: linear-gradient(
+    135deg,
+    oklch(45% 0.16 160),
+    oklch(40% 0.15 166)
+  ) !important;
+  border: none !important;
+  box-shadow:
+    0 4px 16px -2px oklch(45% 0.16 160 / 0.35),
+    inset 0 1px 0 oklch(55% 0.12 158 / 0.2);
+  letter-spacing: 0.025em;
+  transition: all 0.25s cubic-bezier(0.22, 0.61, 0.36, 1);
 }
 
 .btn-primary:hover {
-  background: linear-gradient(135deg, oklch(52% 0.22 155), oklch(48% 0.2 160)) !important;
-  box-shadow: 0 8px 16px rgba(34, 197, 94, 0.25);
+  background: linear-gradient(
+    135deg,
+    oklch(42% 0.16 160),
+    oklch(37% 0.15 166)
+  ) !important;
+  box-shadow:
+    0 8px 24px -4px oklch(45% 0.16 160 / 0.4),
+    inset 0 1px 0 oklch(55% 0.12 158 / 0.25);
+  transform: translateY(-2px);
 }
 
 .btn-primary:active {
-  background: linear-gradient(135deg, oklch(48% 0.22 155), oklch(45% 0.2 160)) !important;
+  background: linear-gradient(
+    135deg,
+    oklch(38% 0.15 160),
+    oklch(34% 0.14 166)
+  ) !important;
+  transform: translateY(0);
+  box-shadow: 0 2px 8px oklch(45% 0.16 160 / 0.25);
 }
 
 .btn-ghost {
-  color: oklch(55% 0.22 155);
+  color: oklch(38% 0.12 158);
+  transition: all 0.25s ease;
 }
 
 .btn-ghost:hover {
-  background: oklch(92% 0.01 160);
-  color: oklch(52% 0.22 155);
+  background: oklch(94% 0.015 152);
+  color: oklch(32% 0.14 158);
 }
 
-/* Estilos para botones de categoría */
-.btn-sm {
-  font-weight: 600;
-  letter-spacing: 0.5px;
+.btn-outline {
+  border-color: oklch(86% 0.025 152);
+  color: oklch(38% 0.12 158);
+  transition: all 0.25s ease;
 }
 
-/* Enfasis en links */
+.btn-outline:hover {
+  background: oklch(45% 0.16 160);
+  border-color: oklch(45% 0.16 160);
+  color: white;
+}
+
+/* ══════════ LINKS ══════════ */
 a {
-  color: oklch(55% 0.22 155);
+  color: oklch(40% 0.14 160);
+  transition: color 0.2s ease;
 }
 
 a:hover {
-  color: oklch(52% 0.22 155);
+  color: oklch(34% 0.15 160);
 }
 
-/* Sombras suaves verdes */
+/* ══════════ SHADOW SYSTEM ══════════ */
 .shadow-sm {
-  box-shadow: 0 4px 12px rgba(34, 197, 94, 0.1);
+  box-shadow:
+    0 1px 4px oklch(45% 0.08 160 / 0.05),
+    0 1px 2px oklch(45% 0.08 160 / 0.03);
 }
 
 .shadow {
-  box-shadow: 0 8px 16px rgba(34, 197, 94, 0.12);
+  box-shadow:
+    0 4px 8px -2px oklch(45% 0.08 160 / 0.06),
+    0 2px 4px -2px oklch(45% 0.08 160 / 0.04);
 }
 
-/* Badges y etiquetas */
+.shadow-md {
+  box-shadow:
+    0 8px 20px -6px oklch(45% 0.08 160 / 0.1),
+    0 3px 8px -3px oklch(45% 0.08 160 / 0.05);
+}
+
+.shadow-lg {
+  box-shadow:
+    0 16px 32px -8px oklch(45% 0.08 160 / 0.12),
+    0 6px 12px -4px oklch(45% 0.08 160 / 0.06);
+}
+
+.shadow-xl {
+  box-shadow:
+    0 24px 48px -12px oklch(45% 0.08 160 / 0.15),
+    0 10px 20px -8px oklch(45% 0.08 160 / 0.08);
+}
+
+/* ══════════ BADGES ══════════ */
 .badge {
-  background: linear-gradient(135deg, oklch(72% 0.12 150), oklch(70% 0.1 155));
-  border: none;
+  font-weight: 600;
+  letter-spacing: 0.035em;
 }
 
 .badge-primary {
-  background: linear-gradient(135deg, oklch(55% 0.22 155), oklch(52% 0.2 160)) !important;
+  background: linear-gradient(
+    135deg,
+    oklch(45% 0.16 160),
+    oklch(40% 0.15 166)
+  ) !important;
+  border: none !important;
+  color: white !important;
 }
 
-/* Inputs y campos de formulario */
-input, textarea, select {
-  border-color: oklch(90% 0.01 160);
+/* ══════════ INPUTS & FORMS ══════════ */
+input,
+textarea,
+select {
+  border-color: oklch(91% 0.01 148) !important;
+  transition:
+    border-color 0.25s ease,
+    box-shadow 0.25s ease;
 }
 
-input:focus, textarea:focus, select:focus {
-  border-color: oklch(55% 0.22 155);
-  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.1);
+input:focus,
+textarea:focus,
+select:focus {
+  border-color: oklch(55% 0.12 158) !important;
+  box-shadow: 0 0 0 4px oklch(45% 0.16 160 / 0.08);
+  outline: none;
 }
 
-/* Tipografía mejorada */
-.text-primary {
-  color: oklch(55% 0.22 155) !important;
+.input-bordered {
+  background: oklch(99% 0.002 140);
+}
+
+/* ══════════ NAVBAR GLASS ══════════ */
+.navbar-glass {
+  background: oklch(100% 0 0 / 0.82);
+  backdrop-filter: blur(24px) saturate(200%);
+  -webkit-backdrop-filter: blur(24px) saturate(200%);
+}
+
+/* ══════════ DIVIDERS ══════════ */
+.divider::before,
+.divider::after {
+  background: oklch(93% 0.01 148) !important;
+}
+
+/* ══════════ STEPS ══════════ */
+.step-primary + .step-primary::before,
+.step-primary::after {
+  background: oklch(45% 0.16 160) !important;
+}
+
+/* ══════════ STATS ══════════ */
+.stat-title {
+  color: oklch(48% 0.012 158) !important;
   font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.68rem;
+  letter-spacing: 0.1em;
 }
 
+/* ══════════ TABLES ══════════ */
+.table-zebra tbody tr:nth-child(even) {
+  background: oklch(97.5% 0.005 148);
+}
+
+thead.bg-base-200 {
+  background: oklch(96% 0.008 148) !important;
+}
+
+thead th {
+  font-weight: 700 !important;
+  text-transform: uppercase;
+  font-size: 0.7rem !important;
+  letter-spacing: 0.08em !important;
+  color: oklch(42% 0.015 158) !important;
+}
+
+/* ══════════ MODALS ══════════ */
+.modal-backdrop {
+  background: oklch(18% 0.02 158 / 0.35);
+  backdrop-filter: blur(6px);
+}
+
+.modal-box {
+  border: 1px solid oklch(93% 0.01 148 / 0.7);
+}
+
+/* ══════════ ALERTS ══════════ */
+.alert {
+  border: none;
+  font-weight: 500;
+  border-radius: 1rem;
+}
+
+/* ══════════ SCROLLBAR ══════════ */
+::-webkit-scrollbar {
+  width: 7px;
+}
+
+::-webkit-scrollbar-track {
+  background: oklch(97% 0.004 148);
+}
+
+::-webkit-scrollbar-thumb {
+  background: oklch(82% 0.02 152);
+  border-radius: 100px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: oklch(68% 0.04 152);
+}
+
+/* ══════════ TEXT SELECTION ══════════ */
+::selection {
+  background: oklch(82% 0.09 155);
+  color: oklch(18% 0.02 158);
+}
+
+/* ══════════ ANIMACIONES ══════════ */
+@keyframes fadeSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes gentlePulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.card {
+  animation: fadeSlideUp 0.45s cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
+}
+
+/* ══════════ LINE CLAMP ══════════ */
 .line-clamp-2 {
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  color: oklch(25% 0.01 160);
+  color: oklch(26% 0.012 158);
 }
 
+/* ══════════ RATING ══════════ */
+.rating .mask-star-2 {
+  --tw-bg-opacity: 1;
+}
+
+/* ══════════ DROPDOWN ══════════ */
+.dropdown-content {
+  animation: fadeSlideUp 0.2s ease forwards;
+}
+
+/* ══════════ HOVER IMAGE ZOOM ══════════ */
+.img-zoom {
+  transition: transform 0.55s cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+.group:hover .img-zoom {
+  transform: scale(1.06);
+}
+
+/* ══════════ GLASSMORPHISM UTILITY ══════════ */
+.glass-card {
+  background: oklch(100% 0 0 / 0.65);
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  border: 1px solid oklch(100% 0 0 / 0.3);
+}
+
+/* ══════════ GRADIENT TEXT ══════════ */
+.text-gradient-brand {
+  background: linear-gradient(135deg, oklch(45% 0.16 160), oklch(55% 0.14 148));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ══════════ DECORATIVE PATTERN ══════════ */
+.pattern-dots {
+  background-image: radial-gradient(oklch(85% 0.03 152) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+/* ══════════ PRODUCT CARD IMAGE OVERLAY ══════════ */
+.card-img-overlay {
+  position: relative;
+  overflow: hidden;
+}
+
+.card-img-overlay::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to top,
+    oklch(16% 0.02 158 / 0.5) 0%,
+    transparent 50%
+  );
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  pointer-events: none;
+}
+
+.group:hover .card-img-overlay::after {
+  opacity: 1;
+}
+
+/* ══════════ FOCUS RING ══════════ */
+.btn:focus-visible {
+  outline: 2px solid oklch(45% 0.16 160);
+  outline-offset: 2px;
+}
+
+/* ══════════ BREADCRUMBS ══════════ */
+.breadcrumbs li + li::before {
+  color: oklch(75% 0.02 152) !important;
+}
