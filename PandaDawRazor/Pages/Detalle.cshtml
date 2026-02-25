@@ -6,236 +6,231 @@
     var promedio = Model.Valoraciones.Any() ? Model.Valoraciones.Average(v => v.Estrellas) : 0;
 }
 
-<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-    @if (Model.Producto == null)
-    {
-        <div class="card bg-white shadow-lg border-0 rounded-3xl">
-            <div class="card-body items-center text-center py-20">
-                <div class="w-24 h-24 rounded-3xl bg-gradient-to-br from-primary/6 to-secondary/6 flex items-center justify-center mb-5">
-                    <i class="fa-solid fa-box-open text-4xl text-primary/30"></i>
-                </div>
-                <h2 class="text-xl font-extrabold tracking-tight">Producto no encontrado</h2>
-                <p class="text-base-content/40 text-sm mt-1">El producto que buscas no existe o ha sido eliminado.</p>
-                <a asp-page="/Index" class="btn btn-primary mt-6 rounded-2xl font-bold gap-2">
-                    <i class="fa-solid fa-arrow-left text-xs"></i>
-                    Volver al catálogo
-                </a>
+@if (Model.Producto == null)
+{
+    <div class="min-h-[60vh] flex items-center justify-center p-6">
+        <div class="text-center">
+            <div class="w-20 h-20 rounded-2xl bg-primary/5 flex items-center justify-center mb-5 mx-auto animate-float">
+                <i class="fa-solid fa-box-open text-3xl text-primary/20"></i>
             </div>
+            <h2 class="text-xl font-black tracking-tight mb-2">Producto no encontrado</h2>
+            <p class="text-base-content/30 text-sm mb-6">El producto que buscas no existe o ha sido eliminado.</p>
+            <a asp-page="/Index" class="btn btn-primary btn-sm rounded-xl font-bold gap-2">
+                <i class="fa-solid fa-arrow-left text-xs"></i> Volver al catálogo
+            </a>
         </div>
-    }
-    else
-    {
-        <!-- Breadcrumb -->
-        <div class="text-sm breadcrumbs mb-8">
-            <ul class="text-base-content/45 text-xs font-medium">
-                <li><a asp-page="/Index" class="hover:text-primary transition-colors">Inicio</a></li>
-                <li><a asp-page="/Index" asp-route-categoria="@Model.Producto.Category" class="hover:text-primary transition-colors">@Model.Producto.Category</a></li>
-                <li class="text-base-content/70 font-semibold">@Model.Producto.Nombre</li>
+    </div>
+}
+else
+{
+    <!-- Breadcrumb -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
+        <div class="text-sm breadcrumbs">
+            <ul class="text-base-content/30 text-xs font-medium">
+                <li><a asp-page="/Index" class="hover:text-primary">Inicio</a></li>
+                <li><a asp-page="/Index" asp-route-categoria="@Model.Producto.Category" class="hover:text-primary">@Model.Producto.Category</a></li>
+                <li class="text-base-content/50 font-semibold">@Model.Producto.Nombre</li>
             </ul>
         </div>
+    </div>
 
-        <!-- Producto -->
-        <div class="card bg-white shadow-lg border-0 overflow-hidden rounded-3xl">
-            <div class="flex flex-col lg:flex-row">
-                <!-- Imagen -->
-                <figure class="lg:w-1/2 bg-base-200/40 relative overflow-hidden">
-                    @if (!string.IsNullOrEmpty(Model.Producto.Imagen))
-                    {
-                        <img src="@Model.Producto.Imagen" alt="@Model.Producto.Nombre" 
-                             class="w-full h-80 lg:h-[520px] object-cover" />
-                    }
-                    else
-                    {
-                        <div class="w-full h-80 lg:h-[520px] flex items-center justify-center bg-gradient-to-br from-primary/4 to-secondary/4">
-                            <i class="fa-solid fa-box text-8xl text-primary/10"></i>
-                        </div>
-                    }
-                    <!-- Badge flotante -->
-                    <span class="badge badge-primary absolute top-5 left-5 shadow-lg font-bold text-[10px] uppercase tracking-wider rounded-xl px-3.5">@Model.Producto.Category</span>
-                </figure>
-                
-                <!-- Info -->
-                <div class="lg:w-1/2 p-8 lg:p-12 flex flex-col">
-                    <div class="flex items-start justify-between gap-4">
-                        <div class="flex-1">
-                            <h1 class="text-2xl lg:text-3xl font-extrabold text-base-content tracking-tight leading-tight">@Model.Producto.Nombre</h1>
-                        </div>
-                        @if (Model.EstaAutenticado)
+    <!-- Producto: layout grid con imagen a la izquierda sticky -->
+    <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12">
+            <!-- Columna imagen (sticky en desktop) -->
+            <div class="lg:col-span-7">
+                <div class="lg:sticky lg:top-24">
+                    <div class="relative rounded-2xl overflow-hidden bg-base-200/10 border border-base-300/10">
+                        @if (!string.IsNullOrEmpty(Model.Producto.Imagen))
                         {
-                            <form method="post" asp-page-handler="ToggleFavorito" asp-route-productoId="@Model.Producto.Id" asp-route-favoritoId="@Model.FavoritoId">
-                                <button type="submit" class="btn btn-ghost btn-circle hover:bg-error/5 transition-all">
-                                    <i class="fa-@(Model.EsFavorito ? "solid" : "regular") fa-heart text-2xl @(Model.EsFavorito ? "text-error" : "text-base-content/25 hover:text-error") transition-colors"></i>
-                                </button>
-                            </form>
-                        }
-                    </div>
-
-                    <!-- Rating -->
-                    <div class="flex items-center gap-3 mt-5">
-                        <div class="rating rating-sm">
-                            @for (int i = 1; i <= 5; i++)
-                            {
-                                <input type="radio" class="mask mask-star-2 bg-warning" disabled 
-                                       @(i <= Math.Round(promedio) ? "checked" : "") />
-                            }
-                        </div>
-                        <span class="text-xs text-base-content/45 font-medium">
-                            @promedio.ToString("0.0") (@Model.Valoraciones.Count @(Model.Valoraciones.Count == 1 ? "valoración" : "valoraciones"))
-                        </span>
-                    </div>
-
-                    <!-- Descripción -->
-                    <p class="text-base-content/50 mt-7 flex-1 leading-relaxed text-sm">
-                        @(Model.Producto.Descripcion ?? "Sin descripción disponible para este producto.")
-                    </p>
-
-                    <div class="h-px bg-base-300/25 my-6"></div>
-
-                    <!-- Precio y compra -->
-                    <div class="flex flex-col sm:flex-row items-start sm:items-end justify-between gap-5">
-                        <div>
-                            <span class="text-3xl lg:text-4xl font-extrabold text-primary tracking-tight">
-                                @Model.Producto.Precio.ToString("C", new System.Globalization.CultureInfo("es-ES"))
-                            </span>
-                            @if (Model.Producto.Stock > 0)
-                            {
-                                <p class="text-xs text-success font-bold flex items-center gap-1.5 mt-2.5 uppercase tracking-wider">
-                                    <i class="fa-solid fa-circle text-[5px]"></i>
-                                    En stock (@Model.Producto.Stock disponibles)
-                                </p>
-                            }
-                            else
-                            {
-                                <p class="text-xs text-error font-bold flex items-center gap-1.5 mt-2.5 uppercase tracking-wider">
-                                    <i class="fa-solid fa-circle text-[5px]"></i>
-                                    Agotado
-                                </p>
-                            }
-                        </div>
-                        
-                        @if (Model.Producto.Stock > 0)
-                        {
-                            <form method="post" asp-page-handler="AddToCart" asp-route-productoId="@Model.Producto.Id">
-                                <button type="submit" class="btn btn-primary btn-lg rounded-2xl font-bold gap-2 shadow-lg">
-                                    <i class="fa-solid fa-cart-plus"></i>
-                                    Añadir al carrito
-                                </button>
-                            </form>
+                            <img src="@Model.Producto.Imagen" alt="@Model.Producto.Nombre"
+                                 class="w-full aspect-square sm:aspect-[4/3] object-cover" />
                         }
                         else
                         {
-                            <button class="btn btn-lg rounded-2xl" disabled>
-                                <i class="fa-solid fa-cart-plus mr-2"></i>
-                                No disponible
-                            </button>
+                            <div class="w-full aspect-square sm:aspect-[4/3] flex items-center justify-center bg-gradient-to-br from-primary/3 to-secondary/3">
+                                <i class="fa-solid fa-box text-8xl text-primary/8"></i>
+                            </div>
                         }
+                        <span class="badge badge-primary absolute top-4 left-4 shadow-lg font-bold text-[9px] uppercase tracking-widest rounded-lg px-3">@Model.Producto.Category</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Columna info -->
+            <div class="lg:col-span-5 flex flex-col">
+                <!-- Cabecera -->
+                <div class="flex items-start justify-between gap-3 mb-5">
+                    <h1 class="text-2xl sm:text-3xl font-black tracking-tight leading-tight flex-1">@Model.Producto.Nombre</h1>
+                    @if (Model.EstaAutenticado)
+                    {
+                        <form method="post" asp-page-handler="ToggleFavorito" asp-route-productoId="@Model.Producto.Id" asp-route-favoritoId="@Model.FavoritoId">
+                            <button type="submit" class="w-10 h-10 rounded-xl bg-base-300/10 flex items-center justify-center hover:bg-error/10 transition-all border border-base-300/10 hover:border-error/20">
+                                <i class="fa-@(Model.EsFavorito ? "solid" : "regular") fa-heart text-lg @(Model.EsFavorito ? "text-error" : "text-base-content/20 hover:text-error") transition-colors"></i>
+                            </button>
+                        </form>
+                    }
+                </div>
+
+                <!-- Rating inline -->
+                <div class="flex items-center gap-2 mb-6">
+                    <div class="flex gap-0.5">
+                        @for (int i = 1; i <= 5; i++)
+                        {
+                            <i class="fa-solid fa-star text-xs @(i <= Math.Round(promedio) ? "text-warning" : "text-base-300/20")"></i>
+                        }
+                    </div>
+                    <span class="text-xs text-base-content/30 font-medium">
+                        @promedio.ToString("0.0") · @Model.Valoraciones.Count @(Model.Valoraciones.Count == 1 ? "opinión" : "opiniones")
+                    </span>
+                </div>
+
+                <!-- Precio grande -->
+                <div class="bg-base-300/5 rounded-2xl p-5 border border-base-300/8 mb-6">
+                    <span class="text-3xl sm:text-4xl font-black text-primary price-display tracking-tight">
+                        @Model.Producto.Precio.ToString("C", new System.Globalization.CultureInfo("es-ES"))
+                    </span>
+                    <p class="text-xs text-base-content/25 font-medium mt-1">IVA incluido · Envío gratuito</p>
+                </div>
+
+                <!-- Stock -->
+                <div class="flex items-center gap-3 mb-6">
+                    @if (Model.Producto.Stock > 0)
+                    {
+                        <span class="w-2.5 h-2.5 rounded-full bg-success animate-pulse"></span>
+                        <span class="text-sm font-semibold text-success/80">En stock</span>
+                        <span class="text-xs text-base-content/25 font-medium">(@Model.Producto.Stock disponibles)</span>
+                    }
+                    else
+                    {
+                        <span class="w-2.5 h-2.5 rounded-full bg-error"></span>
+                        <span class="text-sm font-semibold text-error/80">Agotado</span>
+                    }
+                </div>
+
+                <!-- Descripción -->
+                <p class="text-sm text-base-content/35 leading-relaxed mb-8">
+                    @(Model.Producto.Descripcion ?? "Sin descripción disponible para este producto.")
+                </p>
+
+                <!-- Botón de compra -->
+                @if (Model.Producto.Stock > 0)
+                {
+                    <form method="post" asp-page-handler="AddToCart" asp-route-productoId="@Model.Producto.Id">
+                        <button type="submit" class="btn btn-primary w-full rounded-xl font-bold h-13 text-sm gap-2 shadow-glow">
+                            <i class="fa-solid fa-cart-plus"></i>
+                            Añadir al carrito
+                        </button>
+                    </form>
+                }
+                else
+                {
+                    <button class="btn w-full rounded-xl opacity-40 h-13" disabled>
+                        <i class="fa-solid fa-cart-plus mr-2"></i> No disponible
+                    </button>
+                }
+
+                <!-- Garantías -->
+                <div class="grid grid-cols-3 gap-3 mt-6">
+                    <div class="text-center p-3 rounded-xl bg-base-300/5 border border-base-300/6">
+                        <i class="fa-solid fa-truck-fast text-primary/40 text-sm mb-1"></i>
+                        <p class="text-[9px] font-bold text-base-content/25 uppercase tracking-wider">Envío 24h</p>
+                    </div>
+                    <div class="text-center p-3 rounded-xl bg-base-300/5 border border-base-300/6">
+                        <i class="fa-solid fa-shield text-primary/40 text-sm mb-1"></i>
+                        <p class="text-[9px] font-bold text-base-content/25 uppercase tracking-wider">Garantía</p>
+                    </div>
+                    <div class="text-center p-3 rounded-xl bg-base-300/5 border border-base-300/6">
+                        <i class="fa-solid fa-rotate-left text-primary/40 text-sm mb-1"></i>
+                        <p class="text-[9px] font-bold text-base-content/25 uppercase tracking-wider">Devolución</p>
                     </div>
                 </div>
             </div>
         </div>
+    </section>
 
-        <!-- Valoraciones -->
-        <div class="mt-14">
-            <div class="flex items-center gap-2 mb-8">
-                <span class="w-8 h-0.5 bg-warning rounded-full"></span>
-                <h2 class="text-xl font-extrabold tracking-tight">Valoraciones</h2>
-                <span class="text-sm text-base-content/40 font-medium">(@Model.Valoraciones.Count)</span>
+    <!-- Valoraciones: diseño horizontal -->
+    <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
+        <div class="border-t border-base-300/10 pt-12">
+            <div class="flex items-center justify-between mb-8">
+                <h2 class="text-xl font-black tracking-tight flex items-center gap-2">
+                    Opiniones
+                    <span class="text-sm font-medium text-base-content/25">(@Model.Valoraciones.Count)</span>
+                </h2>
             </div>
 
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-7">
-                <!-- Formulario -->
-                @if (Model.EstaAutenticado)
-                {
-                    <div class="card bg-white shadow-md border-0 rounded-3xl">
-                        <div class="card-body p-7">
-                            <h3 class="font-bold text-sm mb-5">Deja tu valoración</h3>
-                            <form method="post" asp-page-handler="AddValoracion" asp-route-productoId="@Model.Producto.Id">
-                                <div class="form-control mb-5">
-                                    <label class="label">
-                                        <span class="label-text font-semibold text-xs uppercase tracking-wider text-base-content/60">Puntuación</span>
-                                    </label>
-                                    <div class="rating rating-lg">
+            <div class="grid grid-cols-1 lg:grid-cols-5 gap-8">
+                <!-- Panel de resumen / formulario -->
+                <div class="lg:col-span-2">
+                    @if (Model.EstaAutenticado)
+                    {
+                        <div class="bg-base-300/5 rounded-2xl p-6 border border-base-300/8">
+                            <p class="font-bold text-sm mb-4 text-base-content/60">Deja tu opinión</p>
+                            <form method="post" asp-page-handler="AddValoracion" asp-route-productoId="@Model.Producto.Id" class="flex flex-col gap-4">
+                                <div>
+                                    <label class="text-[10px] font-bold uppercase tracking-widest text-base-content/30 block mb-2">Puntuación</label>
+                                    <div class="rating rating-md">
                                         @for (int i = 1; i <= 5; i++)
                                         {
-                                            <input type="radio" name="Estrellas" value="@i" 
+                                            <input type="radio" name="Estrellas" value="@i"
                                                    class="mask mask-star-2 bg-warning" @(i == 5 ? "checked" : "") />
                                         }
                                     </div>
                                 </div>
-                                <div class="form-control mb-5">
-                                    <label class="label">
-                                        <span class="label-text font-semibold text-xs uppercase tracking-wider text-base-content/60">Tu opinión</span>
-                                    </label>
-                                    <textarea name="Resena" class="textarea textarea-bordered h-28 focus:textarea-primary rounded-2xl text-sm" 
-                                              placeholder="¿Qué te ha parecido este producto?" required></textarea>
+                                <div>
+                                    <label class="text-[10px] font-bold uppercase tracking-widest text-base-content/30 block mb-2">Tu opinión</label>
+                                    <textarea name="Resena" class="textarea textarea-bordered w-full h-24 rounded-xl text-sm border-base-300/15" placeholder="¿Qué te ha parecido?" required></textarea>
                                 </div>
-                                <button type="submit" class="btn btn-primary w-full rounded-2xl font-bold text-sm gap-2">
-                                    <i class="fa-solid fa-paper-plane text-xs"></i>
-                                    Enviar valoración
+                                <button type="submit" class="btn btn-primary btn-sm w-full rounded-xl font-bold text-xs gap-1.5">
+                                    <i class="fa-solid fa-paper-plane text-[10px]"></i> Enviar
                                 </button>
                             </form>
                         </div>
-                    </div>
-                }
-                else
-                {
-                    <div class="card bg-white shadow-md border-0 rounded-3xl">
-                        <div class="card-body items-center text-center py-12">
-                            <div class="w-16 h-16 rounded-3xl bg-gradient-to-br from-primary/6 to-secondary/6 flex items-center justify-center mb-4">
-                                <i class="fa-solid fa-user-lock text-2xl text-primary/30"></i>
-                            </div>
-                            <p class="text-base-content/40 text-sm font-medium">Inicia sesión para valorar</p>
-                            <a asp-page="/Login" class="btn btn-primary btn-sm mt-4 rounded-2xl font-bold text-xs gap-1.5">
-                                <i class="fa-solid fa-right-to-bracket text-[10px]"></i>
-                                Iniciar sesión
+                    }
+                    else
+                    {
+                        <div class="bg-base-300/5 rounded-2xl p-8 border border-base-300/8 text-center">
+                            <i class="fa-solid fa-user-lock text-2xl text-primary/15 mb-3"></i>
+                            <p class="text-sm text-base-content/30 font-medium mb-4">Inicia sesión para opinar</p>
+                            <a asp-page="/Login" class="btn btn-primary btn-sm rounded-xl font-bold text-xs gap-1.5">
+                                <i class="fa-solid fa-right-to-bracket text-[10px]"></i> Entrar
                             </a>
                         </div>
-                    </div>
-                }
+                    }
+                </div>
 
-                <!-- Lista -->
-                <div class="lg:col-span-2 flex flex-col gap-4">
+                <!-- Lista de opiniones -->
+                <div class="lg:col-span-3 flex flex-col gap-3">
                     @if (!Model.Valoraciones.Any())
                     {
-                        <div class="card bg-white shadow-sm border-0 rounded-3xl">
-                            <div class="card-body items-center text-center py-14">
-                                <div class="w-16 h-16 rounded-3xl bg-warning/8 flex items-center justify-center mb-4">
-                                    <i class="fa-regular fa-star text-2xl text-warning/40"></i>
-                                </div>
-                                <p class="font-bold text-sm">Sin valoraciones todavía</p>
-                                <p class="text-xs text-base-content/40 mt-1">¡Sé el primero en valorar este producto!</p>
-                            </div>
+                        <div class="text-center py-14">
+                            <i class="fa-regular fa-star text-2xl text-warning/20 mb-3"></i>
+                            <p class="font-bold text-sm text-base-content/40">Sin opiniones todavía</p>
+                            <p class="text-xs text-base-content/25 mt-1">¡Sé el primero en opinar!</p>
                         </div>
                     }
                     else
                     {
                         @foreach (var valoracion in Model.Valoraciones.OrderByDescending(v => v.Fecha))
                         {
-                            <div class="card bg-white shadow-sm border-0 rounded-2xl hover:shadow-md">
-                                <div class="card-body py-5 px-6">
-                                    <div class="flex items-start justify-between gap-4">
-                                        <div class="flex items-center gap-3">
-                                            <div class="avatar">
-                                                <div class="w-10 h-10 rounded-xl ring-2 ring-primary/15 ring-offset-base-100 ring-offset-1">
-                                                    <img src="https://api.dicebear.com/7.x/initials/svg?seed=@(valoracion.UsuarioNombre ?? "U")" alt="Avatar" />
-                                                </div>
-                                            </div>
-                                            <div>
-                                                <p class="font-bold text-sm text-base-content">@(valoracion.UsuarioNombre ?? "Usuario")</p>
-                                                <p class="text-[11px] text-base-content/40 font-medium">@valoracion.Fecha.ToString("dd MMM yyyy")</p>
-                                            </div>
-                                        </div>
-                                        <div class="rating rating-sm">
-                                            @for (int i = 1; i <= 5; i++)
-                                            {
-                                                <input type="radio" class="mask mask-star-2 bg-warning" disabled 
-                                                       @(i <= valoracion.Estrellas ? "checked" : "") />
-                                            }
-                                        </div>
+                            <div class="flex gap-4 p-4 rounded-xl bg-base-300/3 border border-base-300/6 hover:border-primary/10 transition-colors">
+                                <div class="w-9 h-9 rounded-lg overflow-hidden shrink-0 ring-1 ring-base-300/15">
+                                    <img src="https://api.dicebear.com/7.x/initials/svg?seed=@(valoracion.UsuarioNombre ?? "U")" alt="Avatar" class="w-full h-full" />
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <div class="flex items-center justify-between gap-2 mb-1">
+                                        <span class="font-bold text-sm text-base-content/70">@(valoracion.UsuarioNombre ?? "Usuario")</span>
+                                        <span class="text-[10px] text-base-content/25 font-medium shrink-0">@valoracion.Fecha.ToString("dd MMM yyyy")</span>
+                                    </div>
+                                    <div class="flex gap-0.5 mb-2">
+                                        @for (int i = 1; i <= 5; i++)
+                                        {
+                                            <i class="fa-solid fa-star text-[10px] @(i <= valoracion.Estrellas ? "text-warning" : "text-base-300/20")"></i>
+                                        }
                                     </div>
                                     @if (!string.IsNullOrEmpty(valoracion.Resena))
                                     {
-                                        <p class="text-base-content/55 mt-3 text-sm leading-relaxed">@valoracion.Resena</p>
+                                        <p class="text-xs text-base-content/35 leading-relaxed">@valoracion.Resena</p>
                                     }
                                 </div>
                             </div>
@@ -244,5 +239,5 @@
                 </div>
             </div>
         </div>
-    }
-</div>
+    </section>
+}
