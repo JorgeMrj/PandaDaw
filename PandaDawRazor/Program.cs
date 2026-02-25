@@ -11,8 +11,7 @@ using PandaBack.Services.Factura;
 using PandaBack.Services.Stripe;
 using PandaBack.Repository;
 using PandaDawRazor.Filters;
-using QuestPDF.Infrastructure;
-using Stripe;
+using PandaDawRazor.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -94,6 +93,10 @@ builder.Services.AddScoped<IFacturaService, FacturaService>();
 // Email (MailKit)
 builder.Services.AddScoped<IEmailService, EmailService>();
 
+// Blazor Server + Notificaciones en tiempo real
+builder.Services.AddServerSideBlazor();
+builder.Services.AddSingleton<NotificacionService>();
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -116,6 +119,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapRazorPages();
+app.MapBlazorHub();
 
 
 app.Run();
