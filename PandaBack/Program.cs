@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
@@ -8,6 +9,8 @@ using PandaBack.Data;
 using PandaBack.Middleware;
 using PandaBack.Models;
 using PandaBack.Repositories;
+using PandaBack.Repositories.Auth;
+using PandaBack.Repository;
 using PandaBack.Services;
 using PandaBack.Services.Auth;
 
@@ -23,10 +26,27 @@ builder.Services.AddDbContext<PandaDbContext>(options =>
 builder.Services.AddScoped<IProductoRepository, ProductoRepository>();
 builder.Services.AddScoped<IProductoService, ProductoService>();
 
+builder.Services.AddScoped<IAuthRepository, AuthRepository>();
+builder.Services.AddScoped<IAuthService, AuthService>();
+
+builder.Services.AddScoped<ICarritoRepository, CarritoRepository>();
+builder.Services.AddScoped<ICarritoService, CarritoService>();
+
+builder.Services.AddScoped<IFavoritoRepository, FavoritoRepository>();
+builder.Services.AddScoped<IFavoritoService, FavoritoService>();
+
+builder.Services.AddScoped<IValoracionRepository, ValoracionRepository>();
+builder.Services.AddScoped<IValoracionService, ValoracionService>();
+
+builder.Services.AddScoped<IVentaRepository, VentaRepository>();
+builder.Services.AddScoped<IVentaService, VentaService>();
+
 builder.Services.AddIdentity<User, IdentityRole>(options => 
     {
         options.Password.RequireDigit = true;
         options.Password.RequireLowercase = true;
+        options.Password.RequireUppercase = true;
+        options.Password.RequireNonAlphanumeric = true;
         options.Password.RequiredLength = 6;
         options.User.RequireUniqueEmail = true;
     })
@@ -50,7 +70,9 @@ builder.Services.AddAuthentication(options =>
             ValidateIssuerSigningKey = true,
             ValidIssuer = builder.Configuration["Jwt:Issuer"],
             ValidAudience = builder.Configuration["Jwt:Audience"],
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey))
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey)),
+            RoleClaimType = ClaimTypes.Role,
+            NameClaimType = ClaimTypes.Name
         };
     });
 
@@ -63,9 +85,7 @@ using (var scope = app.Services.CreateScope())
     var services = scope.ServiceProvider;
     try
     {
-        var context = services.GetRequiredService<PandaDbContext>();
-        context.Database.EnsureCreated();
-        DataSeeder.Initialize(context);
+        await DataSeeder.InitializeAsync(services);
     }
     catch (Exception ex)
     {
