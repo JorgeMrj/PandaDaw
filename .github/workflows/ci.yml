@@ -1,4 +1,4 @@
-﻿name: Build
+name: Build
 
 on:
   push:
@@ -33,7 +33,16 @@ jobs:
     needs: test
     steps:
       - uses: actions/checkout@v4
-      - run: cd PandaDaw-BrunoTest && npx @usebruno/cli run
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0'
+      
+      - run: dotnet run --project PandaBack/PandaBack.csproj &
+      
+      - run: sleep 10
+
+      - name: Run Bruno Tests
+          run: cd PandaDaw-BrunoTest && npx @usebruno/cli run --env local
 
   playwright:
     name: Playwright
