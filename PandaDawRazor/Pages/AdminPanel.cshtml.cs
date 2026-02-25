@@ -2,16 +2,19 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using PandaBack.Models;
 using PandaBack.Services;
+using PandaDawRazor.Services;
 
 namespace PandaDawRazor.Pages;
 
 public class AdminPanelModel : PageModel
 {
     private readonly IProductoService _productoService;
+    private readonly NotificacionService _notificacionService;
 
-    public AdminPanelModel(IProductoService productoService)
+    public AdminPanelModel(IProductoService productoService, NotificacionService notificacionService)
     {
         _productoService = productoService;
+        _notificacionService = notificacionService;
     }
 
     public List<Producto> Productos { get; set; } = new();
@@ -65,11 +68,18 @@ public class AdminPanelModel : PageModel
             Imagen = ProductoInput.ImagenUrl
         };
 
-        var result = await _productoService.CreateProductoAsync(producto);
+var result = await _productoService.CreateProductoAsync(producto);
         
         if (result.IsSuccess)
         {
             SuccessMessage = "Producto creado correctamente";
+            _notificacionService.EnviarATodos(new Notificacion
+            {
+                Tipo = "success",
+                Titulo = "Producto creado",
+                Mensaje = $"Se ha creado el producto: {producto.Nombre}",
+                Icono = "fa-solid fa-plus-circle"
+            });
         }
         else
         {
@@ -105,11 +115,18 @@ public class AdminPanelModel : PageModel
             Imagen = ProductoInput.ImagenUrl
         };
 
-        var result = await _productoService.UpdateProductoAsync(id, producto);
+var result = await _productoService.UpdateProductoAsync(id, producto);
         
         if (result.IsSuccess)
         {
             SuccessMessage = "Producto actualizado correctamente";
+            _notificacionService.EnviarATodos(new Notificacion
+            {
+                Tipo = "info",
+                Titulo = "Producto actualizado",
+                Mensaje = $"Se ha actualizado: {producto.Nombre}",
+                Icono = "fa-solid fa-pen-to-square"
+            });
         }
         else
         {
@@ -128,11 +145,18 @@ public class AdminPanelModel : PageModel
             return RedirectToPage("/Index");
         }
 
-        var result = await _productoService.DeleteProductoAsync(id);
+var result = await _productoService.DeleteProductoAsync(id);
         
         if (result.IsSuccess)
         {
             SuccessMessage = "Producto eliminado correctamente";
+            _notificacionService.EnviarATodos(new Notificacion
+            {
+                Tipo = "error",
+                Titulo = "Producto eliminado",
+                Mensaje = "Un producto ha sido eliminado del catálogo",
+                Icono = "fa-solid fa-trash"
+            });
         }
         else
         {
@@ -157,11 +181,18 @@ public class AdminPanelModel : PageModel
         {
             var producto = productoResult.Value;
             producto.IsDeleted = false;
-            var result = await _productoService.UpdateProductoAsync(id, producto);
+var result = await _productoService.UpdateProductoAsync(id, producto);
             
             if (result.IsSuccess)
             {
                 SuccessMessage = "Producto restaurado correctamente";
+                _notificacionService.EnviarATodos(new Notificacion
+                {
+                    Tipo = "success",
+                    Titulo = "Producto restaurado",
+                    Mensaje = $"El producto {producto.Nombre} ha sido restaurado",
+                    Icono = "fa-solid fa-trash-arrow-up"
+                });
             }
             else
             {

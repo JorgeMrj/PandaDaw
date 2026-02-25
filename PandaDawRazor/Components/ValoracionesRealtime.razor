@@ -37,20 +37,20 @@
                         <label class="label">
                             <span class="label-text font-bold text-base text-primary">Puntuación</span>
                         </label>
-                        <div class="rating rating-lg gap-2 justify-center">
+                        <div class="flex gap-2 justify-center">
                             @for (int i = 1; i <= 5; i++)
                             {
                                 var star = i;
-                                <input type="radio"
-                                       name="estrellas-blazor"
-                                       class="mask mask-star-2 bg-warning cursor-pointer transition-transform hover:scale-110"
-                                       checked="@(estrellas == star)"
-                                       @onclick="() => estrellas = star" />
+                                <button type="button"
+                                        class="transition-transform hover:scale-125 focus:outline-none bg-transparent border-0 p-1"
+                                        @onclick="@(() => SeleccionarEstrella(star))">
+                                    <i class="@(star <= estrellas ? "fa-solid" : "fa-regular") fa-star text-3xl @(star <= estrellas ? "text-warning" : "text-base-content/30")"></i>
+                                </button>
                             }
                         </div>
                         <div class="text-center mt-2">
                             <span class="text-sm font-semibold text-warning">
-                                @string.Join("", Enumerable.Repeat("★", estrellas))@string.Join("", Enumerable.Repeat("☆", 5 - estrellas))
+                                @estrellas ★ (@GetTextoEstrellas())
                             </span>
                         </div>
                     </div>
@@ -239,6 +239,21 @@
     private string? mensajeError;
     private string? mensajeExito;
     private long? ultimaValoracionId;
+
+    private void SeleccionarEstrella(int star)
+    {
+        estrellas = star;
+    }
+
+    private string GetTextoEstrellas() => estrellas switch
+    {
+        1 => "Muy malo",
+        2 => "Malo",
+        3 => "Regular",
+        4 => "Bueno",
+        5 => "Excelente",
+        _ => ""
+    };
 
     protected override async Task OnInitializedAsync()
     {
