@@ -1,32 +1,33 @@
 @using PandaDawRazor.Services
+@using Microsoft.AspNetCore.SignalR.Client
 @inject NotificacionService NotificacionService
-@implements IDisposable
+@inject NavigationManager Navigation
+@implements IAsyncDisposable
 
-<div class="fixed top-4 right-4 z-[9999] flex flex-col gap-3 pointer-events-none max-w-sm w-full">
+<div class="fixed top-16 sm:top-20 right-2 sm:right-4 z-[99999] flex flex-col gap-2 pointer-events-none max-w-xs sm:max-w-sm w-full"
+     style="max-height: calc(100vh - 80px); overflow-y: auto;">
     @foreach (var notif in notificaciones.ToList())
     {
         <div class="pointer-events-auto transform transition-all duration-300 ease-out"
-             style="animation: toastSlideIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)">
-            <div class="rounded-2xl shadow-2xl border-2 p-4 flex items-start gap-3 overflow-hidden relative
-                        @GetContainerClass(notif.Tipo)">
-                <div class="absolute left-0 top-0 bottom-0 w-1.5 rounded-l-xl @GetBarColor(notif.Tipo)"></div>
+             style="animation: toastSlideIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);">
+            <div class="rounded-xl shadow-2xl bg-base-100 border-l-4 p-3 flex items-start gap-3 relative
+                        @GetBorderColor(notif.Tipo)">
                 
-                <div class="w-10 h-10 rounded-lg flex items-center justify-center shrink-0 @GetIconBgClass(notif.Tipo)">
-                    <i class="@notif.Icono @GetIconColorClass(notif.Tipo)"></i>
+                <div class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 @GetIconBgClass(notif.Tipo)">
+                    <i class="@notif.Icono text-sm @GetIconColorClass(notif.Tipo)"></i>
                 </div>
 
                 <div class="flex-1 min-w-0">
-                    <p class="font-bold text-sm">@notif.Titulo</p>
-                    <p class="text-xs mt-0.5 opacity-80">@notif.Mensaje</p>
-                    <p class="text-[10px] opacity-50 mt-1">@notif.Fecha.ToString("HH:mm")</p>
+                    <p class="font-bold text-xs sm:text-sm truncate">@notif.Titulo</p>
+                    <p class="text-xs mt-0.5 opacity-70 line-clamp-2">@notif.Mensaje</p>
                 </div>
 
                 <button class="btn btn-ghost btn-xs btn-circle opacity-50 hover:opacity-100 shrink-0"
                         @onclick="() => CerrarNotificacion(notif)">
-                    <i class="fa-solid fa-xmark"></i>
+                    <i class="fa-solid fa-xmark text-xs"></i>
                 </button>
                 
-                <div class="absolute bottom-0 left-0 right-0 h-1 bg-base-300/30">
+                <div class="absolute bottom-0 left-0 right-0 h-0.5 bg-base-300/20">
                     <div class="h-full @GetProgressBarColor(notif.Tipo)" style="animation: shrink-width 4s linear forwards;"></div>
                 </div>
             </div>
@@ -36,7 +37,18 @@
 
 <style>
     @@keyframes toastSlideIn {
-        from { opacity: 0; transform: translateX(120%); }
+        from { opacity: 0; transform: translateX(100%); }
+        to { opacity: 1; transform: translateX(0); }
+    }
+    @@keyframes shrink-width {
+        from { width: 100%; }
+        to { width: 0%; }
+    }
+</style>
+
+<style>
+    @@keyframes toastSlideIn {
+        from { opacity: 0; transform: translateX(100%); }
         to { opacity: 1; transform: translateX(0); }
     }
     @@keyframes shrink-width {
@@ -139,22 +151,13 @@
         StateHasChanged();
     }
 
-    private string GetContainerClass(string tipo) => tipo switch
+    private string GetBorderColor(string tipo) => tipo switch
     {
-        "success" => "bg-white border-success",
-        "warning" => "bg-white border-warning", 
-        "error"   => "bg-white border-error",
-        "info"    => "bg-white border-info",
-        _         => "bg-white border-primary"
-    };
-
-    private string GetBarColor(string tipo) => tipo switch
-    {
-        "success" => "bg-success",
-        "warning" => "bg-warning",
-        "error"   => "bg-error",
-        "info"    => "bg-info",
-        _         => "bg-primary"
+        "success" => "border-success",
+        "warning" => "border-warning", 
+        "error"   => "border-error",
+        "info"    => "border-info",
+        _         => "border-primary"
     };
 
     private string GetIconBgClass(string tipo) => tipo switch
@@ -184,7 +187,52 @@
         _         => "bg-primary"
     };
 
-    public void Dispose()
+    private HubConnection? _hubConnection;
+
+    protected override async Task OnInitializedAsync()
+    {
+        NotificacionService.OnNotificacion += HandleNotificacion;
+        await InitSignalR();
+    }
+
+    private async Task InitSignalR()
+    {
+        try
+        {
+            _hubConnection = new HubConnectionBuilder()
+                .WithUrl(Navigation.ToAbsoluteUri("/notificacionhub"))
+                .WithAutomaticReconnect()
+                .Build();
+
+            _hubConnection.On<Notificacion>("NotificacionRecibida", (notif) =>
+            {
+                Console.WriteLine($"SignalR received notification: {notif.Titulo}");
+                if (string.IsNullOrEmpty(UserId) || notif.Tipo == "broadcast")
+                {
+                    InvokeAsync(() =>
+                    {
+                        notif.Fecha = DateTime.Now;
+                        notificaciones.Add(notif);
+                        StateHasChanged();
+                        StartAutoClose(notif);
+                    });
+                }
+            });
+
+            await _hubConnection.StartAsync();
+            if (!string.IsNullOrEmpty(UserId))
+            {
+                await _hubConnection.InvokeAsync("JoinGroup", UserId);
+            }
+            Console.WriteLine($"SignalR connected for user: {UserId}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"SignalR connection error: {ex.Message}");
+        }
+    }
+
+    public async ValueTask DisposeAsync()
     {
         NotificacionService.OnNotificacion -= HandleNotificacion;
         
@@ -195,6 +243,16 @@
                 try { cts.Cancel(); cts.Dispose(); } catch { }
             }
             _timerCts.Clear();
+        }
+
+        if (_hubConnection != null)
+        {
+            try
+            {
+                await _hubConnection.StopAsync();
+                await _hubConnection.DisposeAsync();
+            }
+            catch { }
         }
     }
 }

@@ -33,6 +33,10 @@
                 <span class="badge badge-warning badge-xs ml-1">@Model.Ventas.Count(v => v.Estado == "Pendiente")</span>
             }
         </a>
+        <a class="tab @(tabActual == "usuarios" ? "tab-active" : "")" asp-route-tab="usuarios">
+            <i class="fa-solid fa-users mr-2"></i> Usuarios
+            <span class="badge badge-info badge-xs ml-1">@Model.Usuarios.Count</span>
+        </a>
     </div>
 
     @if (tabActual == "productos")
@@ -276,6 +280,208 @@
         <div class="text-center py-16">
             <i class="fa-solid fa-box-open text-3xl text-base-content/10 mb-3"></i>
             <p class="font-bold text-sm text-base-content/35">No hay productos</p>
+        </div>
+    }
+}
+else if (tabActual == "usuarios")
+{
+    <!-- Stats de Usuarios -->
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+        <div class="bg-base-300/5 rounded-xl p-4 border border-base-300/6">
+            <p class="text-[9px] font-bold uppercase tracking-widest text-base-content/25">Total</p>
+            <span class="text-2xl font-black text-primary price-display">@Model.UsuariosConRoles.Count</span>
+        </div>
+        <div class="bg-info/5 rounded-xl p-4 border border-info/20">
+            <p class="text-[9px] font-bold uppercase tracking-widest text-info/60">Admins</p>
+            <span class="text-2xl font-black text-info price-display">@Model.UsuariosConRoles.Count(u => u.Role == "Admin")</span>
+        </div>
+        <div class="bg-warning/5 rounded-xl p-4 border border-warning/20">
+            <p class="text-[9px] font-bold uppercase tracking-widest text-warning/60">Bloqueados</p>
+            <span class="text-2xl font-black text-warning price-display">@Model.UsuariosConRoles.Count(u => u.EstaBloqueado)</span>
+        </div>
+        <div class="bg-success/5 rounded-xl p-4 border border-success/20">
+            <p class="text-[9px] font-bold uppercase tracking-widest text-success/60">Activos</p>
+            <span class="text-2xl font-black text-success price-display">@Model.UsuariosConRoles.Count(u => !u.EstaBloqueado)</span>
+        </div>
+    </div>
+
+    <!-- Filtro de usuarios -->
+    <div class="bg-base-300/3 rounded-xl border border-base-300/6 p-4 mb-6">
+        <form method="get" class="flex flex-col sm:flex-row gap-3 items-center">
+            <input type="hidden" name="tab" value="usuarios" />
+            <div class="relative flex-1 w-full">
+                <i class="fa-solid fa-search absolute left-3.5 top-1/2 -translate-y-1/2 text-base-content/20 text-xs"></i>
+                <input type="text" name="filtroUsuario" value="@Model.FiltroUsuario" placeholder="Buscar usuarios..."
+                       class="input input-bordered w-full pl-10 rounded-xl h-10 text-sm border-base-300/10" />
+            </div>
+            <button type="submit" class="btn btn-primary btn-sm rounded-xl font-bold text-xs h-9 min-h-0 px-4 gap-1">
+                <i class="fa-solid fa-filter text-[9px]"></i> Buscar
+            </button>
+        </form>
+    </div>
+
+    <!-- Lista de Usuarios -->
+    @if (Model.UsuariosConRoles.Any())
+    {
+        <div class="hidden md:block bg-base-300/3 rounded-2xl border border-base-300/8 overflow-hidden">
+            <table class="table table-zebra w-full">
+                <thead>
+                    <tr class="border-b border-base-300/10">
+                        <th class="bg-base-300/5 py-3 px-4">ID</th>
+                        <th class="bg-base-300/5 py-3">Usuario</th>
+                        <th class="bg-base-300/5 py-3">Email</th>
+                        <th class="bg-base-300/5 py-3">Rol</th>
+                        <th class="bg-base-300/5 py-3">Estado</th>
+                        <th class="bg-base-300/5 py-3">Registrado</th>
+                        <th class="bg-base-300/5 py-3 px-4">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var usuario in Model.UsuariosConRoles)
+                    {
+                        <tr class="border-b border-base-300/5 hover:bg-base-300/5 transition-colors @(usuario.EstaBloqueado ? "opacity-50" : "")">
+                            <td class="font-mono text-xs text-base-content/30 px-4">@usuario.Usuario.Id.Substring(0, 8)</td>
+                            <td>
+                                <div class="flex items-center gap-3">
+                                    <div class="avatar placeholder">
+                                        <div class="bg-primary/10 text-primary rounded-full w-8">
+                                            <span class="text-xs">@usuario.Usuario.UserName?[0].ToString().ToUpper()</span>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <p class="font-bold text-sm">@usuario.Usuario.UserName</p>
+                                        @if (usuario.Role == "Admin")
+                                        {
+                                            <span class="badge badge-xs badge-info">Admin</span>
+                                        }
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="text-sm text-base-content/70">@usuario.Usuario.Email</td>
+                            <td>
+                                @if (usuario.Role == "Admin")
+                                {
+                                    <span class="badge badge-info badge-xs">Admin</span>
+                                }
+                                else
+                                {
+                                    <span class="badge badge-neutral badge-xs">Usuario</span>
+                                }
+                            </td>
+                            <td>
+                                @if (usuario.EstaBloqueado)
+                                {
+                                    <span class="badge badge-error badge-xs">Bloqueado</span>
+                                }
+                                else
+                                {
+                                    <span class="badge badge-success badge-xs">Activo</span>
+                                }
+                            </td>
+                            <td class="text-xs text-base-content/50">@usuario.Usuario.FechaAlta.ToString("dd/MM/yyyy")</td>
+                            <td class="px-4">
+                                <div class="flex gap-1">
+                                    @if (usuario.EstaBloqueado)
+                                    {
+                                        <form method="post" asp-page-handler="DesbloquearUsuario" class="inline">
+                                            <input type="hidden" name="userId" value="@usuario.Usuario.Id" />
+                                            <button type="submit" class="w-8 h-8 rounded-lg flex items-center justify-center text-success/60 hover:text-success hover:bg-success/8 transition-all" title="Desbloquear">
+                                                <i class="fa-solid fa-unlock text-xs"></i>
+                                            </button>
+                                        </form>
+                                    }
+                                    else
+                                    {
+                                        <form method="post" asp-page-handler="BloquearUsuario" class="inline">
+                                            <input type="hidden" name="userId" value="@usuario.Usuario.Id" />
+                                            <button type="submit" class="w-8 h-8 rounded-lg flex items-center justify-center text-warning/60 hover:text-warning hover:bg-warning/8 transition-all" title="Bloquear">
+                                                <i class="fa-solid fa-lock text-xs"></i>
+                                            </button>
+                                        </form>
+                                    }
+                                    @if (usuario.Usuario.Id != HttpContext.Session.GetString("UserId"))
+                                    {
+                                        <form method="post" asp-page-handler="EliminarUsuario" class="inline">
+                                            <input type="hidden" name="userId" value="@usuario.Usuario.Id" />
+                                            <button type="submit" class="w-8 h-8 rounded-lg flex items-center justify-center text-error/40 hover:text-error hover:bg-error/8 transition-all" title="Eliminar" onclick="return confirm('¿Eliminar este usuario?')">
+                                                <i class="fa-solid fa-trash text-xs"></i>
+                                            </button>
+                                        </form>
+                                    }
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Vista cards móvil -->
+        <div class="md:hidden flex flex-col gap-3">
+            @foreach (var usuario in Model.UsuariosConRoles)
+            {
+                <div class="p-4 rounded-xl bg-base-100 border border-base-300/8 @(usuario.EstaBloqueado ? "opacity-50" : "")">
+                    <div class="flex items-start justify-between mb-3">
+                        <div class="flex items-center gap-3">
+                            <div class="avatar placeholder">
+                                <div class="bg-primary/10 text-primary rounded-full w-10">
+                                    <span>@usuario.Usuario.UserName?[0].ToString().ToUpper()</span>
+                                </div>
+                            </div>
+                            <div>
+                                <p class="font-bold">@usuario.Usuario.UserName</p>
+                                <p class="text-xs text-base-content/50">@usuario.Usuario.Email</p>
+                            </div>
+                        </div>
+                        @if (usuario.EstaBloqueado)
+                        {
+                            <span class="badge badge-error badge-xs">Bloqueado</span>
+                        }
+                        else
+                        {
+                            <span class="badge badge-success badge-xs">Activo</span>
+                        }
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <div class="flex gap-1">
+                            @if (usuario.EstaBloqueado)
+                            {
+                                <form method="post" asp-page-handler="DesbloquearUsuario">
+                                    <input type="hidden" name="userId" value="@usuario.Usuario.Id" />
+                                    <button type="submit" class="btn btn-success btn-xs gap-1">
+                                        <i class="fa-solid fa-unlock"></i> Desbloquear
+                                    </button>
+                                </form>
+                            }
+                            else
+                            {
+                                <form method="post" asp-page-handler="BloquearUsuario">
+                                    <input type="hidden" name="userId" value="@usuario.Usuario.Id" />
+                                    <button type="submit" class="btn btn-warning btn-xs gap-1">
+                                        <i class="fa-solid fa-lock"></i> Bloquear
+                                    </button>
+                                </form>
+                            }
+                            @if (usuario.Usuario.Id != HttpContext.Session.GetString("UserId"))
+                            {
+                                <form method="post" asp-page-handler="EliminarUsuario">
+                                    <input type="hidden" name="userId" value="@usuario.Usuario.Id" />
+                                    <button type="submit" class="btn btn-error btn-xs" onclick="return confirm('¿Eliminar?')">
+                                        <i class="fa-solid fa-trash"></i>
+                                    </button>
+                                </form>
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+    else
+    {
+        <div class="text-center py-16">
+            <i class="fa-solid fa-users text-3xl text-base-content/10 mb-3"></i>
+            <p class="font-bold text-sm text-base-content/35">No hay usuarios</p>
         </div>
     }
 }
