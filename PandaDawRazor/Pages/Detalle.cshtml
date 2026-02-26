@@ -145,5 +145,71 @@
                    param-UserId="@Model.UserId"
                    param-EstaAutenticado="@Model.EstaAutenticado"
                    param-UsuarioNombre="@(HttpContext.Session.GetString("UserName"))" />
+
+        <!-- Fallback: Static ratings display if Blazor doesn't load -->
+        <noscript>
+            <div class="mt-16">
+                <h2 class="text-4xl font-bold mb-10 flex items-center gap-3 text-primary">
+                    <i class="fa-solid fa-star text-warning text-3xl"></i>
+                    Valoraciones
+                    <span class="text-2xl text-base-content/60">(@Model.Valoraciones.Count)</span>
+                </h2>
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    @if (Model.EstaAutenticado)
+                    {
+                        <div class="card bg-base-100 shadow-xl border-2 border-primary/20 rounded-2xl">
+                            <div class="card-body items-center text-center">
+                                <p class="text-lg text-base-content/70">Inicia sesión para valorar</p>
+                                <a href="/Login" class="btn btn-primary mt-4">Iniciar sesión</a>
+                            </div>
+                        </div>
+                    }
+                    <div class="lg:col-span-2">
+                        @if (!Model.Valoraciones.Any())
+                        {
+                            <div class="card bg-base-100 shadow-xl border-2 border-primary/10 rounded-2xl">
+                                <div class="card-body items-center text-center py-16">
+                                    <p class="font-bold text-2xl text-base-content mb-2">Sin valoraciones todavía</p>
+                                    <p class="text-base text-base-content/60">¡Sé el primero en valorar este producto!</p>
+                                </div>
+                            </div>
+                        }
+                        else
+                        {
+                            @foreach (var v in Model.Valoraciones.OrderByDescending(x => x.Fecha).Take(10))
+                            {
+                                <div class="card bg-base-100 shadow-md border border-base-300 rounded-2xl mb-4">
+                                    <div class="card-body py-5">
+                                        <div class="flex items-center justify-between mb-3">
+                                            <div class="flex items-center gap-3">
+                                                <div class="avatar">
+                                                    <div class="w-12 h-12 rounded-full ring ring-primary">
+                                                        <img src="https://api.dicebear.com/7.x/initials/svg?seed=@(v.UsuarioNombre ?? "U")" />
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <p class="font-bold text-base text-primary">@(v.UsuarioNombre ?? "Usuario")</p>
+                                                    <p class="text-sm text-base-content/50">@v.Fecha.ToString("dd MMM yyyy")</p>
+                                                </div>
+                                            </div>
+                                            <div class="rating rating-sm">
+                                                @for (int i = 1; i <= 5; i++)
+                                                {
+                                                    <input type="radio" class="mask mask-star-2 bg-warning" disabled checked="@(i <= v.Estrellas)" />
+                                                }
+                                            </div>
+                                        </div>
+                                        @if (!string.IsNullOrEmpty(v.Resena))
+                                        {
+                                            <p class="text-base text-base-content/80">@v.Resena</p>
+                                        }
+                                    </div>
+                                </div>
+                            }
+                        }
+                    </div>
+                </div>
+            </div>
+        </noscript>
     }
 </div>

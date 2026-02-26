@@ -32,7 +32,7 @@ public class IndexModel : PageModel
     [BindProperty(SupportsGet = true)]
     public string? Categoria { get; set; }
 
-    public async Task OnGetAsync()
+public async Task OnGetAsync()
     {
         // Cargar productos
         if (!string.IsNullOrEmpty(Categoria) && Enum.TryParse<Categoria>(Categoria, out var cat))
@@ -71,6 +71,13 @@ public class IndexModel : PageModel
             if (favResult.IsSuccess)
             {
                 FavoritosMap = favResult.Value.ToDictionary(f => f.ProductoId, f => f.Id);
+            }
+            
+            // Cargar contador del carrito
+            var carritoResult = await _carritoService.GetCarritoByUserIdAsync(userId);
+            if (carritoResult.IsSuccess)
+            {
+                ViewData["CartCount"] = carritoResult.Value.TotalItems;
             }
         }
     }

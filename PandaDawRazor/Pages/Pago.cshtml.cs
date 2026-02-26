@@ -61,7 +61,6 @@ public class PagoModel : PageModel
             return RedirectToPage("/Login");
         }
 
-        // Construir las URLs de éxito y cancelación para Stripe
         var baseUrl = $"{Request.Scheme}://{Request.Host}";
         var successUrl = $"{baseUrl}/PagoExitoso";
         var cancelUrl = $"{baseUrl}/Pago";
@@ -70,8 +69,19 @@ public class PagoModel : PageModel
 
         if (stripeResult.IsSuccess)
         {
-            // Redirigir al checkout de Stripe
-            return Redirect(stripeResult.Value);
+            PagoExitoso = true;
+            Carrito = new CarritoDto();
+
+            _notificacionService.Enviar(UserId, new Notificacion
+            {
+                Tipo = "success",
+                Titulo = "¡Pago exitoso!",
+                Mensaje = "Tu pago ha sido procesado correctamente",
+                Icono = "fa-solid fa-check-circle"
+            });
+
+            _notificacionService.NotificarCarritoActualizado(UserId, 0);
+            return RedirectToPage("/PagoExitoso");
         }
         else
         {

@@ -117,7 +117,7 @@
                         var favoritoId = esFavorito ? Model.FavoritosMap[producto.Id] : 0;
 
                         <div class="group relative">
-                            <div class="card overflow-hidden rounded-2xl border border-base-300/10 hover:border-primary/20 h-full flex flex-col transition-all duration-500">
+                            <div class="card overflow-hidden rounded-2xl border border-base-300/10 hover:border-primary/20 h-full flex flex-col transition-all duration-500 group/card">
                                 <!-- Imagen -->
                                 <figure class="relative aspect-[4/3] bg-base-200/20 overflow-hidden">
                                     <a asp-page="/Detalle" asp-route-id="@producto.Id" class="block w-full h-full">
@@ -134,8 +134,8 @@
                                         }
                                     </a>
                                     <!-- Overlay superior: categoría + favorito -->
-                                    <div class="absolute top-0 left-0 right-0 p-3 flex items-start justify-between">
-                                        <span class="badge badge-sm bg-base-100/80 backdrop-blur-md text-base-content/70 border-0 font-bold text-[9px] rounded-lg px-2.5 uppercase tracking-wider">
+                                    <div class="absolute top-0 left-0 right-0 p-3 flex items-start justify-between z-10">
+                                        <span class="badge badge-sm bg-base-100/90 backdrop-blur-md text-base-content/80 border-0 font-bold text-[9px] rounded-lg px-2.5 uppercase tracking-wider shadow-sm">
                                             @producto.Category
                                         </span>
                                         <form method="post" asp-page-handler="ToggleFavorito">
@@ -144,8 +144,10 @@
                                             {
                                                 <input type="hidden" name="favoritoId" value="@favoritoId" />
                                             }
-                                            <button type="submit" class="w-8 h-8 rounded-lg bg-base-100/80 backdrop-blur-md flex items-center justify-center hover:bg-error hover:text-white transition-all duration-300 hover:scale-110 border-0">
-                                                <i class="fa-@(esFavorito ? "solid" : "regular") fa-heart text-xs @(esFavorito ? "text-error" : "text-base-content/30")"></i>
+                                            <button type="submit" 
+                                                    class="w-9 h-9 rounded-xl bg-base-100/90 backdrop-blur-md flex items-center justify-center hover:bg-error/90 hover:text-white transition-all duration-300 hover:scale-110 hover:rotate-12 border-0 favorite-btn"
+                                                    data-is-favorite="@esFavorito.ToString().ToLower()">
+                                                <i class="fa-@(esFavorito ? "solid" : "regular") fa-heart text-sm heart-icon @(esFavorito ? "text-error" : "text-base-content/50")"></i>
                                             </button>
                                         </form>
                                     </div>
