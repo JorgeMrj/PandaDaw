@@ -6,7 +6,7 @@ meta {
 
 post {
   url: {{baseUrl}}/Productos
-  body: multipartForm
+  body: json
   auth: bearer
 }
 
@@ -14,11 +14,13 @@ auth:bearer {
   token: {{adminToken}}
 }
 
-body:multipart-form {
-  Nombre: Producto Test Bruno
-  Precio: 99.99
-  Stock: 10
-  Categoria: Audio
+body:json {
+  {
+    "nombre": "Producto Test Bruno",
+    "precio": 99.99,
+    "stock": 10,
+    "categoria": "Audio"
+  }
 }
 
 assert {

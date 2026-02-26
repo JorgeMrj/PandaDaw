@@ -6,15 +6,17 @@ meta {
 
 post {
   url: {{baseUrl}}/Productos
-  body: multipartForm
+  body: json
   auth: none
 }
 
-body:multipart-form {
-  Nombre: Producto Sin Auth
-  Precio: 50.00
-  Stock: 5
-  Categoria: Gaming
+body:json {
+  {
+    "nombre": "Producto Sin Auth",
+    "precio": 50.00,
+    "stock": 5,
+    "categoria": "Gaming"
+  }
 }
 
 assert {

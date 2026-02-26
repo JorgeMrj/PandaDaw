@@ -6,7 +6,7 @@ meta {
 
 put {
   url: {{baseUrl}}/Productos/1
-  body: multipartForm
+  body: json
   auth: bearer
 }
 
@@ -14,11 +14,13 @@ auth:bearer {
   token: {{adminToken}}
 }
 
-body:multipart-form {
-  Nombre: Producto Actualizado
-  Precio: 149.99
-  Stock: 20
-  Categoria: Audio
+body:json {
+  {
+    "nombre": "Producto Actualizado",
+    "precio": 149.99,
+    "stock": 20,
+    "categoria": "Audio"
+  }
 }
 
 assert {

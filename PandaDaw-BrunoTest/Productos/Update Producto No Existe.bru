@@ -6,7 +6,7 @@ meta {
 
 put {
   url: {{baseUrl}}/Productos/99999
-  body: multipartForm
+  body: json
   auth: bearer
 }
 
@@ -14,11 +14,13 @@ auth:bearer {
   token: {{adminToken}}
 }
 
-body:multipart-form {
-  Nombre: Producto Fantasma
-  Precio: 10.00
-  Stock: 1
-  Categoria: Gaming
+body:json {
+  {
+    "nombre": "Producto Fantasma",
+    "precio": 10.00,
+    "stock": 1,
+    "categoria": "Gaming"
+  }
 }
 
 assert {
