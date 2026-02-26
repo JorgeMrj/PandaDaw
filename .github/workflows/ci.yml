@@ -1,4 +1,4 @@
-﻿name: Build
+name: Build
 
 on:
   push:
@@ -9,22 +9,63 @@ jobs:
     name: Build
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
-    - uses: actions/setup-dotnet@v4
-      with:
-        dotnet-version: '10.0'
-    - run: dotnet build PandaDaw.sln
-    - run: dotnet publish PandaBack/PandaBack.csproj -c Release -o ./publish
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0'
+      - run: dotnet build PandaDaw.sln
+      - run: dotnet publish PandaBack/PandaBack.csproj -c Release -o ./publish
 
   test:
     name: Test
     runs-on: ubuntu-latest
     needs: build
     steps:
-    - uses: actions/checkout@v4
-    - uses: actions/setup-dotnet@v4
-      with:
-        dotnet-version: '10.0'
-    - run: dotnet test Tests/Tests.csproj --verbosity normal
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0'
+      - run: dotnet test Tests/Tests.csproj --verbosity normal
 
+  bruno:
+    name: Bruno
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0'
 
+      # 1. Encendemos la base de datos (Postgres/Redis) en segundo plano
+      - run: docker compose up -d
+
+      # 2. Encendemos la API
+      - run: dotnet run --project PandaBack/PandaBack.csproj --launch-profile "http" &
+
+      # 3. Esperamos a que todo esté listo
+      - run: sleep 10
+
+      # 4. Lanzamos los tests
+      - name: Run Bruno Tests
+        run: cd PandaDaw-BrunoTest && npx @usebruno/cli run --env local
+
+  playwright:
+    name: Playwright
+    runs-on: ubuntu-latest
+    needs: bruno
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0'
+      
+      - run: docker compose up -d
+
+      - run: dotnet run --project PandaBack/PandaBack.csproj --launch-profile "http" &
+      - run: dotnet run --project PandaDawRazor/PandaDawRazor.csproj &
+      - run: sleep 15
+
+      - run: dotnet build PandaDaw-Playwright/PandaDaw-Playwright.csproj
+      - run: pwsh PandaDaw-Playwright/bin/Debug/net10.0/playwright.ps1 install --with-deps
+      - run: dotnet test PandaDaw-Playwright/PandaDaw-Playwright.csproj --verbosity normal
