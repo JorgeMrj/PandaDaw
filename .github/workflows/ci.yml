@@ -37,10 +37,16 @@ jobs:
         with:
           dotnet-version: '10.0'
 
+      # 1. Encendemos la base de datos (Postgres/Redis) en segundo plano
+      - run: docker compose up -d
+
+      # 2. Encendemos la API
       - run: dotnet run --project PandaBack/PandaBack.csproj --launch-profile "http" &
 
+      # 3. Esperamos a que todo esté listo
       - run: sleep 10
 
+      # 4. Lanzamos los tests
       - name: Run Bruno Tests
         run: cd PandaDaw-BrunoTest && npx @usebruno/cli run --env local
 
@@ -53,6 +59,8 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '10.0'
+      
+      - run: docker compose up -d
 
       - run: dotnet run --project PandaBack/PandaBack.csproj --launch-profile "http" &
       - run: dotnet run --project PandaDawRazor/PandaDawRazor.csproj &
