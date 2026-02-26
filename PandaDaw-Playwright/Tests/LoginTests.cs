@@ -49,10 +49,9 @@ public class LoginTests : BaseTest
     public async Task Login_MuestraEnlaceARegistro()
     {
         await GoToPage(TestConstants.LoginPath);
-        var registerLink = Page.GetByRole(AriaRole.Link, new() { Name = "Crear cuenta" })
-                           ?? Page.GetByRole(AriaRole.Link, new() { Name = "Regístrate" })
-                           ?? Page.Locator("a[href*='Register']");
-        await Expect(registerLink!).ToBeVisibleAsync();
+        // Buscar enlace de registro - puede tener diferentes textos
+        var registerLink = Page.Locator("a[href*='Register']");
+        await Expect(registerLink).ToBeVisibleAsync();
     }
 
     // ══════════════════════════════════════════════════════════════

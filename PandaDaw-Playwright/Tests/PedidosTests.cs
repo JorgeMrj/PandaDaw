@@ -1,6 +1,7 @@
 using Microsoft.Playwright;
 using Microsoft.Playwright.NUnit;
 using NUnit.Framework;
+using System.Text.RegularExpressions;
 
 namespace PandaDaw_Playwright.Tests;
 
@@ -99,29 +100,42 @@ public class PedidosTests : BaseTest
 
         await GoToPage(TestConstants.PagoPath);
 
-        // Rellenar formulario de pago
-        await Page.Locator("input[name*='ombre'], input[placeholder*='ombre']").First
-            .FillAsync("Test");
-        await Page.Locator("input[name*='pellido'], input[placeholder*='pellido']").First
-            .FillAsync("Playwright");
+        // Rellenar formulario de pago usando GetByLabel
+        var nombreField = Page.GetByLabel(new Regex("ombre", RegexOptions.IgnoreCase));
+        if (await nombreField.CountAsync() == 0)
+            nombreField = Page.Locator("input[type='text']").First;
+        await nombreField.FillAsync("Test");
 
-        var emailField = Page.Locator("#pagoForm input[type='email'], input[name*='mail']").First;
+        var apellidoField = Page.GetByLabel(new Regex("apellido", RegexOptions.IgnoreCase));
+        if (await apellidoField.CountAsync() == 0)
+            apellidoField = Page.Locator("input[type='text']").Nth(1);
+        await apellidoField.FillAsync("Playwright");
+
+        var emailField = Page.GetByLabel(new Regex("mail|correo", RegexOptions.IgnoreCase));
+        if (await emailField.CountAsync() == 0)
+            emailField = Page.Locator("input[type='email']").First;
         if (await emailField.IsVisibleAsync())
             await emailField.FillAsync("test@pw.com");
 
-        var dirField = Page.Locator("input[name*='ireccion'], input[placeholder*='ireccion']").First;
+        var dirField = Page.GetByLabel(new Regex("direcci", RegexOptions.IgnoreCase));
+        if (await dirField.CountAsync() == 0)
+            dirField = Page.Locator("input[type='text']").Nth(2);
         if (await dirField.IsVisibleAsync())
             await dirField.FillAsync("Calle Playwright 123");
 
-        var cpField = Page.Locator("input[maxlength='5']").First;
+        var cpField = Page.GetByLabel(new Regex("postal|código", RegexOptions.IgnoreCase));
+        if (await cpField.CountAsync() == 0)
+            cpField = Page.Locator("input[maxlength='5']").First;
         if (await cpField.IsVisibleAsync())
             await cpField.FillAsync("28001");
 
-        var ciudadField = Page.Locator("input[name*='iudad'], input[placeholder*='iudad']").First;
+        var ciudadField = Page.GetByLabel(new Regex("ciudad", RegexOptions.IgnoreCase));
+        if (await ciudadField.CountAsync() == 0)
+            ciudadField = Page.Locator("input[type='text']").Nth(3);
         if (await ciudadField.IsVisibleAsync())
             await ciudadField.FillAsync("Madrid");
 
-        var paypalRadio = Page.Locator("input[value='paypal']");
+        var paypalRadio = Page.Locator("input[value='paypal'], input[value*='PayPal']");
         if (await paypalRadio.IsVisibleAsync())
             await paypalRadio.CheckAsync(new() { Force = true });
 

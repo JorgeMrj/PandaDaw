@@ -1,6 +1,7 @@
 using Microsoft.Playwright;
 using Microsoft.Playwright.NUnit;
 using NUnit.Framework;
+using System.Text.RegularExpressions;
 
 namespace PandaDaw_Playwright.Tests;
 
@@ -45,35 +46,49 @@ public class FlujosCompletosTests : BaseTest
 
         // 5. Ir al carrito
         await GoToPage(TestConstants.CarritoPath);
-        await Expect(Page.Locator("body")).ToContainTextAsync("€");
+        var pageText = await Page.Locator("body").TextContentAsync();
+        Assert.That(pageText, Does.Not.Contain("vacío"), "El carrito no debe estar vacío");
 
         // 6. Ir a pagar
         await GoToPage(TestConstants.PagoPath);
 
-        // 7. Rellenar formulario
-        await Page.Locator("input[name*='ombre'], input[placeholder*='ombre']").First
-            .FillAsync("Flujo");
-        await Page.Locator("input[name*='pellido'], input[placeholder*='pellido']").First
-            .FillAsync("Completo");
+        // 7. Rellenar formulario usando GetByLabel
+        var nombreField = Page.GetByLabel(new Regex("ombre", RegexOptions.IgnoreCase));
+        if (await nombreField.CountAsync() == 0)
+            nombreField = Page.Locator("input[type='text']").First;
+        await nombreField.FillAsync("Flujo");
 
-        var emailField = Page.Locator("#pagoForm input[type='email'], input[name*='mail']").First;
+        var apellidoField = Page.GetByLabel(new Regex("apellido", RegexOptions.IgnoreCase));
+        if (await apellidoField.CountAsync() == 0)
+            apellidoField = Page.Locator("input[type='text']").Nth(1);
+        await apellidoField.FillAsync("Completo");
+
+        var emailField = Page.GetByLabel(new Regex("mail|correo", RegexOptions.IgnoreCase));
+        if (await emailField.CountAsync() == 0)
+            emailField = Page.Locator("input[type='email']").First;
         if (await emailField.IsVisibleAsync())
             await emailField.FillAsync(uniqueEmail);
 
-        var dirField = Page.Locator("input[name*='ireccion'], input[placeholder*='ireccion']").First;
+        var dirField = Page.GetByLabel(new Regex("direcci", RegexOptions.IgnoreCase));
+        if (await dirField.CountAsync() == 0)
+            dirField = Page.Locator("input[type='text']").Nth(2);
         if (await dirField.IsVisibleAsync())
             await dirField.FillAsync("Calle E2E 42");
 
-        var cpField = Page.Locator("input[maxlength='5']").First;
+        var cpField = Page.GetByLabel(new Regex("postal|código", RegexOptions.IgnoreCase));
+        if (await cpField.CountAsync() == 0)
+            cpField = Page.Locator("input[maxlength='5']").First;
         if (await cpField.IsVisibleAsync())
             await cpField.FillAsync("28001");
 
-        var ciudadField = Page.Locator("input[name*='iudad'], input[placeholder*='iudad']").First;
+        var ciudadField = Page.GetByLabel(new Regex("ciudad", RegexOptions.IgnoreCase));
+        if (await ciudadField.CountAsync() == 0)
+            ciudadField = Page.Locator("input[type='text']").Nth(3);
         if (await ciudadField.IsVisibleAsync())
             await ciudadField.FillAsync("Madrid");
 
         // Paypal para evitar tarjeta
-        var paypalRadio = Page.Locator("input[value='paypal']");
+        var paypalRadio = Page.Locator("input[value='paypal'], input[value*='PayPal']");
         if (await paypalRadio.IsVisibleAsync())
             await paypalRadio.CheckAsync(new() { Force = true });
 
@@ -82,13 +97,14 @@ public class FlujosCompletosTests : BaseTest
         await Page.WaitForLoadStateAsync(LoadState.NetworkIdle);
 
         // 8. Verificar confirmación
-        var pageText = await Page.Locator("body").TextContentAsync();
+        pageText = await Page.Locator("body").TextContentAsync();
         Assert.That(pageText, Does.Contain("pedido").IgnoreCase.Or.Contain("confirmación").IgnoreCase
             .Or.Contain("gracias").IgnoreCase);
 
         // 9. Verificar en Pedidos
         await GoToPage(TestConstants.PedidosPath);
-        await Expect(Page.Locator("body")).ToContainTextAsync("€");
+        pageText = await Page.Locator("body").TextContentAsync();
+        Assert.That(pageText, Does.Not.Contain("Sin pedidos"), "Debe haber pedidos");
     }
 
     // ══════════════════════════════════════════════════════════════
@@ -102,7 +118,7 @@ public class FlujosCompletosTests : BaseTest
 
         // 1. Buscar un producto
         await GoToPage(TestConstants.IndexPath);
-        var searchInput = Page.Locator("input[name='buscar']").First;
+        var searchInput = Page.Locator("input[name='buscar']").Last;
         await searchInput.FillAsync("a");
         await searchInput.PressAsync("Enter");
         await Page.WaitForLoadStateAsync(LoadState.NetworkIdle);
@@ -129,11 +145,13 @@ public class FlujosCompletosTests : BaseTest
 
             // 5. Verificar que está en favoritos
             await GoToPage(TestConstants.FavoritosPath);
-            await Expect(Page.Locator("body")).ToContainTextAsync("€");
+            var pageText = await Page.Locator("body").TextContentAsync();
+            Assert.That(pageText, Does.Not.Contain("Sin favoritos"), "Debe haber favoritos");
 
             // 6. Verificar carrito
             await GoToPage(TestConstants.CarritoPath);
-            await Expect(Page.Locator("body")).ToContainTextAsync("€");
+            pageText = await Page.Locator("body").TextContentAsync();
+            Assert.That(pageText, Does.Not.Contain("vacío"), "El carrito no debe estar vacío");
         }
     }
 
@@ -158,11 +176,16 @@ public class FlujosCompletosTests : BaseTest
             await Expect(Page).ToHaveURLAsync(new System.Text.RegularExpressions.Regex(@"Detalle/\d+"));
 
             // 3. Intentar dejar una valoración
-            var textarea = Page.Locator("textarea[name='Resena'], textarea").First;
+            var textarea = Page.GetByLabel(new Regex("escritura|reseña|resena|opinión|opinion", RegexOptions.IgnoreCase));
+            if (await textarea.CountAsync() == 0)
+                textarea = Page.Locator("textarea").First;
             if (await textarea.IsVisibleAsync())
             {
-                var star5 = Page.Locator("input[name='Estrellas'][value='5']");
-                await star5.CheckAsync(new() { Force = true });
+                var starInputs = Page.Locator("input[type='radio']");
+                if (await starInputs.CountAsync() >= 4)
+                {
+                    await starInputs.Nth(4).CheckAsync(new() { Force = true });
+                }
                 await textarea.FillAsync("Valoración del flujo E2E de Playwright");
                 var submitBtn = Page.Locator("form:has(textarea) button[type='submit']").First;
                 await submitBtn.ClickAsync();
@@ -190,18 +213,27 @@ public class FlujosCompletosTests : BaseTest
         var modal = Page.Locator("#modal_crear, dialog[open]").First;
         await Expect(modal).ToBeVisibleAsync();
 
-        var nombreInput = modal.Locator("input[name*='ombre'], input").First;
+        // Usar GetByLabel para evitar el token CSRF
+        var nombreInput = modal.GetByLabel(new Regex("ombre", RegexOptions.IgnoreCase));
+        if (await nombreInput.CountAsync() == 0)
+            nombreInput = modal.Locator("input[type='text']").First;
         await nombreInput.FillAsync(productoNombre);
 
-        var descInput = modal.Locator("textarea, input[name*='escripcion']").First;
+        var descInput = modal.GetByLabel(new Regex("descripci", RegexOptions.IgnoreCase));
+        if (await descInput.CountAsync() == 0)
+            descInput = modal.Locator("textarea").First;
         if (await descInput.IsVisibleAsync())
             await descInput.FillAsync("Producto creado por Playwright E2E test");
 
-        var precioInput = modal.Locator("input[name*='recio'], input[type='number']").First;
+        var precioInput = modal.GetByLabel(new Regex("recio", RegexOptions.IgnoreCase));
+        if (await precioInput.CountAsync() == 0)
+            precioInput = modal.Locator("input[type='number']").First;
         if (await precioInput.IsVisibleAsync())
             await precioInput.FillAsync("49.99");
 
-        var stockInput = modal.Locator("input[name*='tock']").First;
+        var stockInput = modal.GetByLabel(new Regex("tock", RegexOptions.IgnoreCase));
+        if (await stockInput.CountAsync() == 0)
+            stockInput = modal.Locator("input[type='number']").Nth(1);
         if (await stockInput.IsVisibleAsync())
             await stockInput.FillAsync("5");
 

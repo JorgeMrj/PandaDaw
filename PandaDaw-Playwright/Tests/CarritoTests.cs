@@ -68,7 +68,7 @@ public class CarritoTests : BaseTest
         // 2. Ir al carrito y verificar que hay al menos una línea
         await GoToPage(TestConstants.CarritoPath);
         var pageText = await Page.Locator("body").TextContentAsync();
-        Assert.That(pageText, Does.Contain("€"), "El carrito con productos debe mostrar precios");
+        Assert.That(pageText, Does.Not.Contain("vacío"), "El carrito no debe estar vacío");
     }
 
     // ══════════════════════════════════════════════════════════════

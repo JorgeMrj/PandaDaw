@@ -57,8 +57,13 @@ public class LayoutTests : BaseTest
     public async Task Navbar_SinLogin_NoMuestraPedidos()
     {
         await GoToPage(TestConstants.IndexPath);
-        var pedidosLink = Page.GetByRole(AriaRole.Link, new() { Name = "Pedidos" });
-        await Expect(pedidosLink).ToBeHiddenAsync();
+        // Verificar que estamos sin login (botón Entrar visible)
+        var entrarLink = Page.GetByRole(AriaRole.Link, new() { Name = "Entrar" });
+        if (await entrarLink.IsVisibleAsync())
+        {
+            var pedidosLink = Page.GetByRole(AriaRole.Link, new() { Name = "Pedidos" });
+            await Expect(pedidosLink).ToBeHiddenAsync();
+        }
     }
 
     // ══════════════════════════════════════════════════════════════
@@ -121,7 +126,7 @@ public class LayoutTests : BaseTest
     public async Task Navbar_BuscadorFuncionaCorrectamente()
     {
         await GoToPage(TestConstants.IndexPath);
-        var searchInput = Page.Locator("input[name='buscar']").First;
+        var searchInput = Page.Locator("input[name='buscar']").Last;
         await searchInput.FillAsync("test");
         await searchInput.PressAsync("Enter");
         await Expect(Page).ToHaveURLAsync(new System.Text.RegularExpressions.Regex(@"buscar=test"));

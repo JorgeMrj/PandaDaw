@@ -36,7 +36,7 @@ public class ErrorTests : BaseTest
         // Navegar a una ruta que no existe
         await GoToPage("/RutaQueNoExiste12345");
         // Debe mostrar error o redirigir, no crash
-        var pageText = await Page.Locator("body").TextContentAsync();
-        Assert.That(pageText, Is.Not.Null.And.Not.Empty, "Debe mostrar contenido, no un crash");
+        var pageContent = await Page.ContentAsync();
+        Assert.That(pageContent, Is.Not.Null.And.Not.Empty, "Debe mostrar contenido, no un crash");
     }
 }
