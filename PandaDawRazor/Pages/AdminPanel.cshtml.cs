@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using PandaBack.Dtos.Ventas;
 using PandaBack.Models;
 using PandaBack.Services;
 using PandaDawRazor.Services;
@@ -12,28 +13,37 @@ namespace PandaDawRazor.Pages;
 public class AdminPanelModel : PageModel
 {
     private readonly IProductoService _productoService;
+    private readonly IVentaService _ventaService;
     private readonly NotificacionService _notificacionService;
     private readonly IWebHostEnvironment _env;
 
-    public AdminPanelModel(IProductoService productoService, NotificacionService notificacionService, IWebHostEnvironment env)
+    public AdminPanelModel(IProductoService productoService, IVentaService ventaService, NotificacionService notificacionService, IWebHostEnvironment env)
     {
         _productoService = productoService;
+        _ventaService = ventaService;
         _notificacionService = notificacionService;
         _env = env;
     }
 
     public List<Producto> Productos { get; set; } = new();
+    public List<VentaResponseDto> Ventas { get; set; } = new();
     public string? ErrorMessage { get; set; }
     public string? SuccessMessage { get; set; }
 
     [BindProperty]
     public ProductoInputModel ProductoInput { get; set; } = new();
 
+    [BindProperty]
+    public PedidoInputModel PedidoInput { get; set; } = new();
+
     [BindProperty(SupportsGet = true)]
     public string? Filtro { get; set; }
 
     [BindProperty(SupportsGet = true)]
     public bool MostrarEliminados { get; set; }
+
+    [BindProperty(SupportsGet = true)]
+    public string? Tab { get; set; }
 
     public async Task<IActionResult> OnGetAsync()
     {
@@ -45,6 +55,7 @@ public class AdminPanelModel : PageModel
         }
 
         await CargarProductos();
+        await CargarVentas();
         return Page();
     }
 
@@ -236,7 +247,7 @@ var result = await _productoService.UpdateProductoAsync(id, producto);
         return Page();
     }
 
-    private async Task CargarProductos()
+private async Task CargarProductos()
     {
         var result = await _productoService.GetAllProductosAsync();
         if (result.IsSuccess)
@@ -260,6 +271,49 @@ var result = await _productoService.UpdateProductoAsync(id, producto);
             // Ordenar por fecha de alta descendente
             Productos = Productos.OrderByDescending(p => p.FechaAlta).ToList();
         }
+    }
+
+    private async Task CargarVentas()
+    {
+        var result = await _ventaService.GetAllVentasAsync();
+        if (result.IsSuccess)
+        {
+            Ventas = result.Value.ToList();
+            // Ordenar por fecha descendente
+            Ventas = Ventas.OrderByDescending(v => v.FechaCompra).ToList();
+        }
+    }
+
+    public async Task<IActionResult> OnPostActualizarEstadoAsync(long ventaId)
+    {
+        var userRole = HttpContext.Session.GetString("UserRole");
+        if (userRole != "Admin")
+        {
+            return RedirectToPage("/Index");
+        }
+
+        if (!Enum.TryParse<EstadoPedido>(PedidoInput.NuevoEstado, out var nuevoEstado))
+        {
+            ErrorMessage = "Estado no válido";
+            await CargarProductos();
+            await CargarVentas();
+            return Page();
+        }
+
+        var result = await _ventaService.UpdateEstadoVentaAsync(ventaId, nuevoEstado);
+        
+        if (result.IsSuccess)
+        {
+            SuccessMessage = $"Pedido #{ventaId} actualizado a {nuevoEstado}";
+        }
+        else
+        {
+            ErrorMessage = result.Error.Message;
+        }
+
+        await CargarProductos();
+        await CargarVentas();
+        return Page();
     }
 
     /// <summary>
@@ -289,5 +343,10 @@ var result = await _productoService.UpdateProductoAsync(id, producto);
         public string Categoria { get; set; } = string.Empty;
         public IFormFile? ImagenArchivo { get; set; }
         public string? ImagenActual { get; set; }
+    }
+
+    public class PedidoInputModel
+    {
+        public string NuevoEstado { get; set; } = string.Empty;
     }
 }

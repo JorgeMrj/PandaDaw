@@ -3,6 +3,7 @@
 @{
     ViewData["Title"] = "Panel de Administración";
     Layout = "_Layout";
+    var tabActual = Model.Tab ?? "productos";
 }
 
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -13,12 +14,29 @@
                 <i class="fa-solid fa-shield-halved text-accent/60 text-xl"></i>
                 Admin Panel
             </h1>
-            <p class="text-sm text-base-content/30 font-medium mt-1">Gestiona productos de la tienda</p>
+            <p class="text-sm text-base-content/30 font-medium mt-1">Gestiona productos y pedidos de la tienda</p>
         </div>
         <button onclick="modal_crear.showModal()" class="btn btn-primary btn-sm rounded-xl font-bold gap-1.5 h-9 min-h-0 px-5 text-xs">
             <i class="fa-solid fa-plus text-[10px]"></i> Nuevo Producto
         </button>
     </div>
+
+    <!-- Tabs -->
+    <div class="tabs tabs-boxed bg-base-300/10 p-1 mb-6 w-fit">
+        <a class="tab @(tabActual == "productos" ? "tab-active" : "")" asp-route-tab="productos">
+            <i class="fa-solid fa-box mr-2"></i> Productos
+        </a>
+        <a class="tab @(tabActual == "pedidos" ? "tab-active" : "")" asp-route-tab="pedidos">
+            <i class="fa-solid fa-receipt mr-2"></i> Pedidos
+            @if (Model.Ventas.Count(v => v.Estado == "Pendiente") > 0)
+            {
+                <span class="badge badge-warning badge-xs ml-1">@Model.Ventas.Count(v => v.Estado == "Pendiente")</span>
+            }
+        </a>
+    </div>
+
+    @if (tabActual == "productos")
+    {
 
     <!-- Mensajes -->
     @if (!string.IsNullOrEmpty(Model.SuccessMessage))
@@ -260,6 +278,163 @@
             <p class="font-bold text-sm text-base-content/35">No hay productos</p>
         </div>
     }
+}
+else if (tabActual == "pedidos")
+{
+    <!-- Stats de Pedidos -->
+    <div class="grid grid-cols-2 lg:grid-cols-5 gap-3 mb-6">
+        <div class="bg-base-300/5 rounded-xl p-4 border border-base-300/6">
+            <p class="text-[9px] font-bold uppercase tracking-widest text-base-content/25">Total</p>
+            <span class="text-2xl font-black text-primary price-display">@Model.Ventas.Count</span>
+        </div>
+        <div class="bg-warning/5 rounded-xl p-4 border border-warning/20">
+            <p class="text-[9px] font-bold uppercase tracking-widest text-warning/60">Pendientes</p>
+            <span class="text-2xl font-black text-warning price-display">@Model.Ventas.Count(v => v.Estado == "Pendiente")</span>
+        </div>
+        <div class="bg-info/5 rounded-xl p-4 border border-info/20">
+            <p class="text-[9px] font-bold uppercase tracking-widest text-info/60">Procesando</p>
+            <span class="text-2xl font-black text-info price-display">@Model.Ventas.Count(v => v.Estado == "Procesando")</span>
+        </div>
+        <div class="bg-secondary/5 rounded-xl p-4 border border-secondary/20">
+            <p class="text-[9px] font-bold uppercase tracking-widest text-secondary/60">Enviados</p>
+            <span class="text-2xl font-black text-secondary price-display">@Model.Ventas.Count(v => v.Estado == "Enviado")</span>
+        </div>
+        <div class="bg-success/5 rounded-xl p-4 border border-success/20">
+            <p class="text-[9px] font-bold uppercase tracking-widest text-success/60">Entregados</p>
+            <span class="text-2xl font-black text-success price-display">@Model.Ventas.Count(v => v.Estado == "Entregado")</span>
+        </div>
+    </div>
+
+    <!-- Lista de Pedidos -->
+    @if (Model.Ventas.Any())
+    {
+        <div class="space-y-4">
+            @foreach (var venta in Model.Ventas)
+            {
+                <div class="bg-base-100 rounded-2xl border border-base-300/10 shadow-md overflow-hidden">
+                    <div class="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <!-- Info Pedido -->
+                        <div class="flex items-start gap-4">
+                            <div class="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                                <i class="fa-solid fa-receipt text-primary text-lg"></i>
+                            </div>
+                            <div>
+                                <div class="flex items-center gap-2 mb-1">
+                                    <span class="font-bold text-lg">Pedido #@venta.Id</span>
+                                    @switch (venta.Estado)
+                                    {
+                                        case "Pendiente":
+                                            <span class="badge badge-warning badge-sm">Pendiente</span>
+                                            break;
+                                        case "Procesando":
+                                            <span class="badge badge-info badge-sm">Procesando</span>
+                                            break;
+                                        case "Enviado":
+                                            <span class="badge badge-secondary badge-sm">Enviado</span>
+                                            break;
+                                        case "Entregado":
+                                            <span class="badge badge-success badge-sm">Entregado</span>
+                                            break;
+                                        case "Cancelado":
+                                            <span class="badge badge-error badge-sm">Cancelado</span>
+                                            break;
+                                    }
+                                </div>
+                                <div class="flex flex-wrap items-center gap-3 text-sm text-base-content/50">
+                                    <span><i class="fa-solid fa-user mr-1"></i>@venta.UsuarioNombre</span>
+                                    <span><i class="fa-solid fa-envelope mr-1"></i>@venta.UsuarioEmail</span>
+                                    <span><i class="fa-solid fa-calendar mr-1"></i>@venta.FechaCompra.ToString("dd/MM/yyyy HH:mm")</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Total y Acciones -->
+                        <div class="flex items-center gap-4">
+                            <div class="text-right">
+                                <p class="text-xs text-base-content/30 font-bold uppercase">Total</p>
+                                <p class="text-xl font-black text-primary">@venta.Total.ToString("C", new System.Globalization.CultureInfo("es-ES"))</p>
+                            </div>
+                            <button onclick="document.getElementById('detalle-@venta.Id').classList.toggle('hidden')" 
+                                    class="btn btn-ghost btn-sm btn-circle">
+                                <i class="fa-solid fa-chevron-down"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Detalle del pedido (expandible) -->
+                    <div id="detalle-@venta.Id" class="hidden border-t border-base-300/10">
+                        <div class="p-4 bg-base-50/50">
+                            <h4 class="font-bold text-sm mb-3 flex items-center gap-2">
+                                <i class="fa-solid fa-box text-base-content/40"></i>
+                                Productos (@venta.Lineas.Count)
+                            </h4>
+                            <div class="space-y-2">
+                                @foreach (var linea in venta.Lineas)
+                                {
+                                    <div class="flex items-center justify-between p-2 rounded-lg bg-base-100 border border-base-300/10">
+                                        <div class="flex items-center gap-3">
+                                            <div class="w-10 h-10 rounded-lg bg-base-200 overflow-hidden">
+                                                @if (!string.IsNullOrEmpty(linea.ProductoImagen))
+                                                {
+                                                    <img src="@linea.ProductoImagen" class="w-full h-full object-cover" />
+                                                }
+                                                else
+                                                {
+                                                    <div class="w-full h-full flex items-center justify-center"><i class="fa-solid fa-image text-base-content/20 text-xs"></i></div>
+                                                }
+                                            </div>
+                                            <div>
+                                                <p class="font-bold text-sm line-clamp-1">@linea.ProductoNombre</p>
+                                                <p class="text-xs text-base-content/40">Qty: @linea.Cantidad × @linea.PrecioUnitario.ToString("C", new System.Globalization.CultureInfo("es-ES"))</p>
+                                            </div>
+                                        </div>
+                                        <span class="font-bold text-sm">@linea.Subtotal.ToString("C", new System.Globalization.CultureInfo("es-ES"))</span>
+                                    </div>
+                                }
+                            </div>
+                            
+                            <!-- Cambiar Estado -->
+                            @if (venta.Estado != "Cancelado" && venta.Estado != "Entregado")
+                            {
+                                <div class="mt-4 pt-4 border-t border-base-300/10">
+                                    <form method="post" asp-page-handler="ActualizarEstado" asp-route-ventaId="@venta.Id" class="flex items-center gap-3">
+                                        <input type="hidden" name="PedidoInput.NuevoEstado" id="estado_@venta.Id" />
+                                        <span class="text-sm font-bold text-base-content/60">Cambiar estado:</span>
+                                        <select onchange="document.getElementById('estado_@venta.Id').value = this.value; this.form.submit()" 
+                                                class="select select-bordered select-sm rounded-lg min-h-0 h-9">
+                                            <option value="">Seleccionar...</option>
+                                            @if (venta.Estado == "Pendiente")
+                                            {
+                                                <option value="Procesando">Procesando</option>
+                                                <option value="Cancelado">Cancelar</option>
+                                            }
+                                            else if (venta.Estado == "Procesando")
+                                            {
+                                                <option value="Enviado">Marcar como Enviado</option>
+                                                <option value="Cancelado">Cancelar</option>
+                                            }
+                                            else if (venta.Estado == "Enviado")
+                                            {
+                                                <option value="Entregado">Marcar como Entregado</option>
+                                            }
+                                        </select>
+                                    </form>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+    else
+    {
+        <div class="text-center py-16">
+            <i class="fa-solid fa-receipt text-3xl text-base-content/10 mb-3"></i>
+            <p class="font-bold text-sm text-base-content/35">No hay pedidos</p>
+        </div>
+    }
+}
 </div>
 
 <!-- Modal Crear -->
