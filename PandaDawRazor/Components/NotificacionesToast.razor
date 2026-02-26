@@ -50,40 +50,93 @@
 
     private List<Notificacion> notificaciones = new();
     private readonly int DuracionNotificacion = 4000;
+    private readonly Dictionary<string, CancellationTokenSource> _timerCts = new();
+    private readonly object _lock = new();
 
     protected override void OnInitialized()
     {
         NotificacionService.OnNotificacion += HandleNotificacion;
     }
 
-    private async void HandleNotificacion(string targetUserId, Notificacion notif)
+    private Task HandleNotificacionAsync(string targetUserId, Notificacion notif)
     {
-        if (!string.IsNullOrEmpty(targetUserId) && targetUserId != UserId) return;
+        if (!string.IsNullOrEmpty(targetUserId) && targetUserId != UserId) 
+            return Task.CompletedTask;
 
-        await InvokeAsync(() =>
+        return InvokeAsync(() =>
         {
             notif.Fecha = DateTime.Now;
             notificaciones.Add(notif);
             StateHasChanged();
-            _ = AutoCerrar(notif);
+            
+            StartAutoClose(notif);
         });
     }
 
-    private async Task AutoCerrar(Notificacion notif)
+    private void HandleNotificacion(string targetUserId, Notificacion notif)
     {
-        await Task.Delay(DuracionNotificacion);
-        await InvokeAsync(() =>
+        _ = HandleNotificacionAsync(targetUserId, notif);
+    }
+
+    private void StartAutoClose(Notificacion notif)
+    {
+        lock (_lock)
         {
-            if (notificaciones.Contains(notif))
+            if (_timerCts.ContainsKey(notif.Id))
             {
-                CerrarNotificacion(notif);
+                try { _timerCts[notif.Id].Cancel(); _timerCts[notif.Id].Dispose(); } 
+                catch { }
             }
-        });
+            
+            var cts = new CancellationTokenSource();
+            _timerCts[notif.Id] = cts;
+            var token = cts.Token;
+
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    await Task.Delay(DuracionNotificacion, token);
+                    if (!token.IsCancellationRequested)
+                    {
+                        await InvokeAsync(() =>
+                        {
+                            if (notificaciones.Contains(notif))
+                            {
+                                CerrarNotificacion(notif);
+                            }
+                        });
+                    }
+                }
+                catch (TaskCanceledException) { }
+                finally
+                {
+                    lock (_lock)
+                    {
+                        if (_timerCts.TryGetValue(notif.Id, out var removedCts) && removedCts == cts)
+                        {
+                            _timerCts.Remove(notif.Id);
+                            try { cts.Dispose(); } catch { }
+                        }
+                    }
+                }
+            }, token);
+        }
     }
 
     private void CerrarNotificacion(Notificacion notif)
     {
+        lock (_lock)
+        {
+            if (_timerCts.TryGetValue(notif.Id, out var cts))
+            {
+                try { cts.Cancel(); cts.Dispose(); } catch { }
+                _timerCts.Remove(notif.Id);
+            }
+        }
+        
         notificaciones.Remove(notif);
+        StateHasChanged();
     }
 
     private string GetContainerClass(string tipo) => tipo switch
@@ -134,5 +187,14 @@
     public void Dispose()
     {
         NotificacionService.OnNotificacion -= HandleNotificacion;
+        
+        lock (_lock)
+        {
+            foreach (var cts in _timerCts.Values)
+            {
+                try { cts.Cancel(); cts.Dispose(); } catch { }
+            }
+            _timerCts.Clear();
+        }
     }
 }

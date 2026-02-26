@@ -5,7 +5,7 @@
 <span class="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-primary text-[10px] font-black text-primary-content flex items-center justify-center shadow-lg @(animating ? "scale-125" : "")"
       style="transition: transform 0.3s cubic-bezier(0.22,0.61,0.36,1)"
       id="cart-badge-blazor">
-    @count
+    @(count > 99 ? "99+" : count)
 </span>
 
 @code {
@@ -14,37 +14,70 @@
 
     private int count;
     private bool animating;
+    private CancellationTokenSource? _animationCts;
 
     protected override void OnInitialized()
     {
-        count = InitialCount;
+        count = Math.Max(0, InitialCount);
         NotificacionService.OnCarritoActualizado += HandleCarritoActualizado;
     }
 
     protected override void OnParametersSet()
     {
-        if (count != InitialCount && InitialCount > 0)
+        if (InitialCount >= 0 && count != InitialCount)
         {
             count = InitialCount;
         }
     }
 
-    private async void HandleCarritoActualizado(string targetUserId, int totalItems)
+    private Task HandleCarritoActualizadoAsync(string targetUserId, int totalItems)
     {
-        await InvokeAsync(async () =>
+        return InvokeAsync(async () =>
         {
-            count = totalItems;
+            try
+            {
+                _animationCts?.Cancel();
+                _animationCts?.Dispose();
+            }
+            catch { }
+
+            _animationCts = new CancellationTokenSource();
+            var token = _animationCts.Token;
+
+            count = Math.Max(0, totalItems);
             animating = true;
             StateHasChanged();
 
-            await Task.Delay(300);
-            animating = false;
-            StateHasChanged();
+            try
+            {
+                await Task.Delay(300, token);
+                if (!token.IsCancellationRequested)
+                {
+                    animating = false;
+                    StateHasChanged();
+                }
+            }
+            catch (TaskCanceledException)
+            {
+                // Animation was interrupted by new update
+            }
         });
+    }
+
+    private void HandleCarritoActualizado(string targetUserId, int totalItems)
+    {
+        _ = HandleCarritoActualizadoAsync(targetUserId, totalItems);
     }
 
     public void Dispose()
     {
         NotificacionService.OnCarritoActualizado -= HandleCarritoActualizado;
+        
+        try
+        {
+            _animationCts?.Cancel();
+            _animationCts?.Dispose();
+        }
+        catch { }
     }
 }
