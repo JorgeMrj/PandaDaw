@@ -132,3 +132,39 @@ jobs:
           else
             echo "❌ **Algunas comprobaciones fallaron.**" >> $GITHUB_STEP_SUMMARY
           fi
+
+  deploy:
+    name: Deploy a Render
+    needs: [summary, build, test-unit, test-integration, test-bruno, test-playwright]
+    runs-on: ubuntu-latest
+    if: >-
+      github.event_name == 'push' &&
+      github.ref == 'refs/heads/dev' &&
+      needs.build.result == 'success' &&
+      needs.test-unit.result == 'success' &&
+      needs.test-integration.result == 'success' &&
+      needs.test-bruno.result == 'success' &&
+      needs.test-playwright.result == 'success'
+    steps:
+      - name: Desplegar PandaBack (API)
+        run: |
+          curl -s -o /dev/null -w "%{http_code}" \
+            "${{ secrets.RENDER_DEPLOY_HOOK_BACKEND }}" | grep -q "2.." \
+            && echo "✅ Despliegue de PandaBack lanzado" \
+            || (echo "❌ Error al lanzar el despliegue de PandaBack" && exit 1)
+      - name: Desplegar PandaDawRazor (Frontend)
+        run: |
+          curl -s -o /dev/null -w "%{http_code}" \
+            "${{ secrets.RENDER_DEPLOY_HOOK_FRONTEND }}" | grep -q "2.." \
+            && echo "✅ Despliegue de PandaDawRazor lanzado" \
+            || (echo "❌ Error al lanzar el despliegue de PandaDawRazor" && exit 1)
+      - name: Resumen del despliegue
+        run: |
+          echo "## 🚀 Despliegue en Render" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Servicio | Estado |" >> $GITHUB_STEP_SUMMARY
+          echo "|----------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| 🔧 PandaBack (API) | ✅ Lanzado |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🌐 PandaDawRazor (Frontend) | ✅ Lanzado |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "> Los servicios tardarán unos minutos en estar disponibles." >> $GITHUB_STEP_SUMMARY
