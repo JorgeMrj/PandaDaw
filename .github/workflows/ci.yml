@@ -30,24 +30,34 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with: { dotnet-version: '10.0' }
       - name: Generar Web y Publicar
-        run: |
-          dotnet tool install -g docfx
-          cat << 'EOF' > docfx.json
-          {
-            "metadata": [{
-              "src": [
-                { "files": ["PandaBack/PandaBack.csproj", "PandaDawRazor/PandaDawRazor.csproj"] }
-              ],
-              "dest": "api"
-            }],
-            "build": {
-              "content": [{"files": ["api/**"]}],
-              "dest": "_site",
-              "template": ["default", "modern"]
+          run: |
+            dotnet tool install -g docfx
+            
+            # 1. Creamos una portada rápida para que GitHub no dé error 404
+            echo '# Documentación de PandaDaw' > index.md
+            echo 'Bienvenido a la documentación oficial del código fuente.' >> index.md
+            
+            # 2. Archivo de configuración actualizado para incluir la portada
+            cat << 'EOF' > docfx.json
+            {
+              "metadata": [{
+                "src": [
+                  { "files": ["PandaBack/PandaBack.csproj", "PandaDawRazor/PandaDawRazor.csproj"] }
+                ],
+                "dest": "api"
+              }],
+              "build": {
+                "content": [
+                  {"files": ["api/**"]},
+                  {"files": ["index.md"]} 
+                ],
+                "dest": "_site",
+                "template": ["default", "modern"]
+              }
             }
-          }
-          EOF
-          docfx metadata && docfx build
+            EOF
+            
+            docfx metadata && docfx build
       - uses: actions/upload-pages-artifact@v3
         with: { path: '_site' }
       - uses: actions/deploy-pages@v4
