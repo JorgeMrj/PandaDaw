@@ -1,7 +1,10 @@
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using PandaBack.Dtos.Ventas;
 using PandaBack.Models;
 using PandaBack.Services;
+using PandaDawRazor.Hubs;
 using PandaDawRazor.Services;
 
 
@@ -12,28 +15,58 @@ namespace PandaDawRazor.Pages;
 public class AdminPanelModel : PageModel
 {
     private readonly IProductoService _productoService;
+    private readonly IVentaService _ventaService;
     private readonly NotificacionService _notificacionService;
+    private readonly SignalRNotificacionService _signalRNotificacionService;
     private readonly IWebHostEnvironment _env;
+    private readonly UserManager<User> _userManager;
 
-    public AdminPanelModel(IProductoService productoService, NotificacionService notificacionService, IWebHostEnvironment env)
+    public AdminPanelModel(IProductoService productoService, IVentaService ventaService, NotificacionService notificacionService, SignalRNotificacionService signalRNotificacionService, IWebHostEnvironment env, UserManager<User> userManager)
     {
         _productoService = productoService;
+        _ventaService = ventaService;
         _notificacionService = notificacionService;
+        _signalRNotificacionService = signalRNotificacionService;
         _env = env;
+        _userManager = userManager;
     }
 
     public List<Producto> Productos { get; set; } = new();
+    public List<VentaResponseDto> Ventas { get; set; } = new();
+    public List<User> Usuarios { get; set; } = new();
     public string? ErrorMessage { get; set; }
     public string? SuccessMessage { get; set; }
 
     [BindProperty]
     public ProductoInputModel ProductoInput { get; set; } = new();
 
+    [BindProperty]
+    public PedidoInputModel PedidoInput { get; set; } = new();
+
+    [BindProperty]
+    public UsuarioInputModel UsuarioInput { get; set; } = new();
+
     [BindProperty(SupportsGet = true)]
     public string? Filtro { get; set; }
 
     [BindProperty(SupportsGet = true)]
     public bool MostrarEliminados { get; set; }
+
+    [BindProperty(SupportsGet = true)]
+    public string? Tab { get; set; }
+
+    [BindProperty(SupportsGet = true)]
+    public string? FiltroUsuario { get; set; }
+
+    public List<User> UsuariosFiltrados { get; set; } = new();
+    public List<UsuarioAdminDto> UsuariosConRoles { get; set; } = new();
+
+    public class UsuarioAdminDto
+    {
+        public User Usuario { get; set; } = null!;
+        public string Role { get; set; } = "Usuario";
+        public bool EstaBloqueado { get; set; }
+    }
 
     public async Task<IActionResult> OnGetAsync()
     {
@@ -45,6 +78,8 @@ public class AdminPanelModel : PageModel
         }
 
         await CargarProductos();
+        await CargarVentas();
+        await CargarUsuarios();
         return Page();
     }
 
@@ -92,6 +127,8 @@ public class AdminPanelModel : PageModel
                 Mensaje = $"Se ha creado el producto: {producto.Nombre}",
                 Icono = "fa-solid fa-plus-circle"
             });
+            
+            try { await _signalRNotificacionService.EnviarNotificacionAsync("", new Notificacion { Tipo = "success", Titulo = "Producto creado", Mensaje = $"Nuevo producto: {producto.Nombre}", Icono = "fa-solid fa-plus-circle" }); } catch { }
         }
         else
         {
@@ -236,7 +273,7 @@ var result = await _productoService.UpdateProductoAsync(id, producto);
         return Page();
     }
 
-    private async Task CargarProductos()
+private async Task CargarProductos()
     {
         var result = await _productoService.GetAllProductosAsync();
         if (result.IsSuccess)
@@ -260,6 +297,84 @@ var result = await _productoService.UpdateProductoAsync(id, producto);
             // Ordenar por fecha de alta descendente
             Productos = Productos.OrderByDescending(p => p.FechaAlta).ToList();
         }
+    }
+
+    private async Task CargarVentas()
+    {
+        var result = await _ventaService.GetAllVentasAsync();
+        if (result.IsSuccess)
+        {
+            Ventas = result.Value.ToList();
+            // Ordenar por fecha descendente
+            Ventas = Ventas.OrderByDescending(v => v.FechaCompra).ToList();
+        }
+    }
+
+    private async Task CargarUsuarios()
+    {
+        var users = _userManager.Users.ToList();
+        Usuarios = users.OrderBy(u => u.UserName).ToList();
+
+        // Cargar roles y estado de bloqueo
+        UsuariosConRoles = new List<UsuarioAdminDto>();
+        foreach (var user in users)
+        {
+            var roles = await _userManager.GetRolesAsync(user);
+            var dto = new UsuarioAdminDto
+            {
+                Usuario = user,
+                Role = roles.FirstOrDefault() ?? "Usuario",
+                EstaBloqueado = user.LockoutEnd.HasValue && user.LockoutEnd > DateTimeOffset.Now
+            };
+            UsuariosConRoles.Add(dto);
+        }
+
+        // Filtrar si hay filtro
+        if (!string.IsNullOrEmpty(FiltroUsuario))
+        {
+            UsuariosFiltrados = Usuarios
+                .Where(u => (u.UserName?.Contains(FiltroUsuario, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                            (u.Email?.Contains(FiltroUsuario, StringComparison.OrdinalIgnoreCase) ?? false))
+                .ToList();
+            UsuariosConRoles = UsuariosConRoles
+                .Where(u => (u.Usuario.UserName?.Contains(FiltroUsuario, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                            (u.Usuario.Email?.Contains(FiltroUsuario, StringComparison.OrdinalIgnoreCase) ?? false))
+                .ToList();
+        }
+    }
+
+    public async Task<IActionResult> OnPostActualizarEstadoAsync(long ventaId)
+    {
+        var userRole = HttpContext.Session.GetString("UserRole");
+        if (userRole != "Admin")
+        {
+            return RedirectToPage("/Index");
+        }
+
+        if (!Enum.TryParse<EstadoPedido>(PedidoInput.NuevoEstado, out var nuevoEstado))
+        {
+            ErrorMessage = "Estado no válido";
+            await CargarProductos();
+            await CargarVentas();
+            await CargarUsuarios();
+            return Page();
+        }
+
+        var result = await _ventaService.UpdateEstadoVentaAsync(ventaId, nuevoEstado);
+        
+        if (result.IsSuccess)
+        {
+            SuccessMessage = $"Pedido #{ventaId} actualizado a {nuevoEstado}";
+        }
+        else
+        {
+            ErrorMessage = result.Error.Message;
+        }
+
+        await CargarProductos();
+        await CargarVentas();
+        await CargarUsuarios();
+        return Page();
     }
 
     /// <summary>
@@ -289,5 +404,121 @@ var result = await _productoService.UpdateProductoAsync(id, producto);
         public string Categoria { get; set; } = string.Empty;
         public IFormFile? ImagenArchivo { get; set; }
         public string? ImagenActual { get; set; }
+    }
+
+    public class PedidoInputModel
+    {
+        public string NuevoEstado { get; set; } = string.Empty;
+    }
+
+    public class UsuarioInputModel
+    {
+        public string UserId { get; set; } = string.Empty;
+    }
+
+    public async Task<IActionResult> OnPostEliminarUsuarioAsync(string userId)
+    {
+        var userRole = HttpContext.Session.GetString("UserRole");
+        if (userRole != "Admin")
+        {
+            return RedirectToPage("/Index");
+        }
+
+        var user = await _userManager.FindByIdAsync(userId);
+        if (user != null)
+        {
+            // No permitir eliminar al propio admin
+            var currentUserId = HttpContext.Session.GetString("UserId");
+            if (user.Id == currentUserId)
+            {
+                ErrorMessage = "No puedes eliminarte a ti mismo";
+                await CargarUsuarios();
+                return Page();
+            }
+
+            var result = await _userManager.DeleteAsync(user);
+            if (result.Succeeded)
+            {
+                SuccessMessage = $"Usuario {user.UserName} eliminado";
+                _notificacionService.EnviarATodos(new Notificacion
+                {
+                    Tipo = "error",
+                    Titulo = "Usuario eliminado",
+                    Mensaje = $"El usuario {user.UserName} ha sido eliminado del sistema",
+                    Icono = "fa-solid fa-user-slash"
+                });
+            }
+            else
+            {
+                ErrorMessage = "Error al eliminar usuario";
+            }
+        }
+        else
+        {
+            ErrorMessage = "Usuario no encontrado";
+        }
+
+        await CargarUsuarios();
+        return Page();
+    }
+
+    public async Task<IActionResult> OnPostBloquearUsuarioAsync(string userId)
+    {
+        var userRole = HttpContext.Session.GetString("UserRole");
+        if (userRole != "Admin")
+        {
+            return RedirectToPage("/Index");
+        }
+
+        var user = await _userManager.FindByIdAsync(userId);
+        if (user != null)
+        {
+            user.LockoutEnd = DateTimeOffset.Now.AddYears(100);
+            await _userManager.UpdateAsync(user);
+            SuccessMessage = $"Usuario {user.UserName} bloqueado";
+            
+            _notificacionService.Enviar(user.Id, new Notificacion
+            {
+                Tipo = "error",
+                Titulo = "Cuenta bloqueada",
+                Mensaje = "Tu cuenta ha sido bloqueada por un administrador",
+                Icono = "fa-solid fa-lock"
+            });
+            
+            try { await _signalRNotificacionService.EnviarNotificacionAsync(user.Id, new Notificacion { Tipo = "error", Titulo = "Cuenta bloqueada", Mensaje = "Tu cuenta ha sido bloqueada", Icono = "fa-solid fa-lock" }); } catch { }
+        }
+
+        await CargarUsuarios();
+        return Page();
+    }
+
+    public async Task<IActionResult> OnPostDesbloquearUsuarioAsync(string userId)
+    {
+        var userRole = HttpContext.Session.GetString("UserRole");
+        if (userRole != "Admin")
+        {
+            return RedirectToPage("/Index");
+        }
+
+        var user = await _userManager.FindByIdAsync(userId);
+        if (user != null)
+        {
+            user.LockoutEnd = null;
+            await _userManager.UpdateAsync(user);
+            SuccessMessage = $"Usuario {user.UserName} desbloqueado";
+            
+            _notificacionService.Enviar(user.Id, new Notificacion
+            {
+                Tipo = "success",
+                Titulo = "Cuenta desbloqueada",
+                Mensaje = "Tu cuenta ha sido desbloqueada",
+                Icono = "fa-solid fa-unlock"
+            });
+            
+            try { await _signalRNotificacionService.EnviarNotificacionAsync(user.Id, new Notificacion { Tipo = "success", Titulo = "Cuenta desbloqueada", Mensaje = "Tu cuenta ha sido desbloqueada", Icono = "fa-solid fa-unlock" }); } catch { }
+        }
+
+        await CargarUsuarios();
+        return Page();
     }
 }

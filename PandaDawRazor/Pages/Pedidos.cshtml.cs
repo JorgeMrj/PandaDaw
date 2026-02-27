@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using PandaBack.Dtos.Ventas;
+using PandaBack.Models;
 using PandaBack.Services;
 using PandaBack.Services.Factura;
 
@@ -58,5 +59,37 @@ public class PedidosModel : PageModel
 
         var pdfBytes = _facturaService.GenerarFacturaPdf(venta);
         return File(pdfBytes, "application/pdf", $"Factura_PandaDaw_{id:D6}.pdf");
+    }
+
+    public async Task<IActionResult> OnGetConfirmarEntregaAsync(long id)
+    {
+        if (string.IsNullOrEmpty(UserId))
+        {
+            return RedirectToPage("/Login");
+        }
+
+        var result = await _ventaService.GetVentaByIdAsync(id);
+        if (result.IsFailure)
+        {
+            return NotFound();
+        }
+
+        var venta = result.Value;
+
+        // Solo el dueño puede confirmar la entrega
+        if (venta.UsuarioId != UserId)
+        {
+            return Forbid();
+        }
+
+        // Solo puede confirmar si está en estado "Enviado"
+        if (venta.Estado != "Enviado")
+        {
+            TempData["Error"] = "Solo puedes confirmar la entrega de pedidos que han sido enviados.";
+            return RedirectToPage();
+        }
+
+        await _ventaService.UpdateEstadoVentaAsync(id, EstadoPedido.Entregado);
+        return RedirectToPage();
     }
 }

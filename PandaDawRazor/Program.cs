@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using PandaBack.Data;
 using PandaBack.Models;
@@ -11,6 +12,7 @@ using PandaBack.Services.Factura;
 using PandaBack.Services.Stripe;
 using PandaBack.Repository;
 using PandaDawRazor.Filters;
+using PandaDawRazor.Hubs;
 using PandaDawRazor.Services;
 using QuestPDF.Infrastructure;
 using Stripe;
@@ -98,6 +100,8 @@ builder.Services.AddScoped<IEmailService, EmailService>();
 // Blazor Server + Notificaciones en tiempo real
 builder.Services.AddServerSideBlazor();
 builder.Services.AddSingleton<NotificacionService>();
+builder.Services.AddSingleton<SignalRNotificacionService>();
+builder.Services.AddSignalR();
 
 var app = builder.Build();
 
@@ -122,6 +126,7 @@ app.UseAuthorization();
 
 app.MapRazorPages();
 app.MapBlazorHub();
+app.MapHub<NotificacionHub>("/notificacionhub");
 
 
 app.Run();
