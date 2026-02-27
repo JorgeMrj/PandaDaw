@@ -1,0 +1,29 @@
+meta {
+  name: Update Producto No Existe
+  type: http
+  seq: 9
+}
+
+put {
+  url: {{baseUrl}}/Productos/99999
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{adminToken}}
+}
+
+body:json {
+  {
+    "nombre": "Producto Fantasma",
+    "precio": 10.00,
+    "stock": 1,
+    "categoria": "Gaming"
+  }
+}
+
+assert {
+  res.status: eq 404
+  res.body.message: isString
+}

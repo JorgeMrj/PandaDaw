@@ -1,0 +1,151 @@
+@page
+@model PandaDawRazor.Pages.CarritoModel
+@{
+    ViewData["Title"] = "Carrito";
+    Layout = "_Layout";
+}
+
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    @if (Model.Carrito?.Lineas.Any() == true)
+    {
+        <!-- Header con contador -->
+        <div class="flex items-end justify-between mb-8">
+            <div>
+                <h1 class="text-2xl sm:text-3xl font-black tracking-tight">Tu carrito</h1>
+                <p class="text-sm text-base-content/30 font-medium mt-1">@Model.Carrito.TotalItems @(Model.Carrito.TotalItems == 1 ? "artículo" : "artículos")</p>
+            </div>
+            <form method="post" asp-page-handler="Vaciar">
+                <button type="submit" class="text-xs font-semibold text-error/50 hover:text-error transition-colors">
+                    Vaciar carrito
+                </button>
+            </form>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Lista de productos (2/3) -->
+            <div class="lg:col-span-2 flex flex-col gap-3">
+                @foreach (var linea in Model.Carrito.Lineas)
+                {
+                    <div class="flex gap-4 p-4 rounded-2xl bg-base-300/3 border border-base-300/8 hover:border-primary/10 transition-colors group">
+                        <!-- Imagen -->
+                        <a asp-page="/Detalle" asp-route-id="@linea.ProductoId" class="w-24 h-24 sm:w-28 sm:h-28 rounded-xl bg-base-200/20 shrink-0 overflow-hidden border border-base-300/8">
+                            @if (!string.IsNullOrEmpty(linea.ProductoImagen))
+                            {
+                                <img src="@linea.ProductoImagen" alt="@linea.ProductoNombre" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                            }
+                            else
+                            {
+                                <div class="w-full h-full flex items-center justify-center"><i class="fa-solid fa-box text-xl text-primary/10"></i></div>
+                            }
+                        </a>
+
+                        <!-- Info central -->
+                        <div class="flex-1 min-w-0 flex flex-col justify-between py-0.5">
+                            <div>
+                                <a asp-page="/Detalle" asp-route-id="@linea.ProductoId" class="font-bold text-sm text-base-content/75 hover:text-primary transition-colors line-clamp-1">
+                                    @linea.ProductoNombre
+                                </a>
+                                <p class="text-xs text-base-content/25 font-medium mt-0.5">@linea.PrecioUnitario.ToString("C", new System.Globalization.CultureInfo("es-ES")) / ud.</p>
+                            </div>
+
+                            <div class="flex items-center justify-between mt-3">
+                                <!-- Controles cantidad -->
+                                <div class="flex items-center gap-0.5 bg-base-300/8 rounded-lg p-0.5 border border-base-300/8">
+                                    <form method="post" asp-page-handler="UpdateCantidad">
+                                        <input type="hidden" name="productoId" value="@linea.ProductoId" />
+                                        <input type="hidden" name="cantidad" value="@(linea.Cantidad - 1)" />
+                                        <button type="submit" class="w-8 h-8 rounded-md flex items-center justify-center hover:bg-base-300/15 transition-colors text-base-content/30 hover:text-base-content/60" @(linea.Cantidad <= 1 ? "disabled" : "")>
+                                            <i class="fa-solid fa-minus text-[10px]"></i>
+                                        </button>
+                                    </form>
+                                    <span class="w-9 text-center font-bold text-sm">@linea.Cantidad</span>
+                                    <form method="post" asp-page-handler="UpdateCantidad">
+                                        <input type="hidden" name="productoId" value="@linea.ProductoId" />
+                                        <input type="hidden" name="cantidad" value="@(linea.Cantidad + 1)" />
+                                        <button type="submit" class="w-8 h-8 rounded-md flex items-center justify-center hover:bg-base-300/15 transition-colors text-base-content/30 hover:text-base-content/60">
+                                            <i class="fa-solid fa-plus text-[10px]"></i>
+                                        </button>
+                                    </form>
+                                </div>
+
+                                <!-- Precio + eliminar -->
+                                <div class="flex items-center gap-3">
+                                    <span class="font-black text-base text-primary price-display">@linea.Subtotal.ToString("C", new System.Globalization.CultureInfo("es-ES"))</span>
+                                    <form method="post" asp-page-handler="RemoveLinea">
+                                        <input type="hidden" name="productoId" value="@linea.ProductoId" />
+                                        <button type="submit" class="w-8 h-8 rounded-md flex items-center justify-center text-base-content/15 hover:text-error hover:bg-error/8 transition-all">
+                                            <i class="fa-solid fa-trash text-xs"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+
+            <!-- Resumen (1/3) -->
+            <div class="lg:col-span-1">
+                <div class="sticky top-24 bg-base-300/5 rounded-2xl border border-base-300/10 p-6">
+                    <h2 class="font-black text-base mb-5 tracking-tight">Resumen</h2>
+
+                    @{
+                        var subtotal = Model.Carrito.Total;
+                        var iva = subtotal * 0.21m;
+                        var total = subtotal + iva;
+                    }
+
+                    <div class="space-y-3 text-sm">
+                        <div class="flex justify-between text-base-content/30 font-medium">
+                            <span>Subtotal (@Model.Carrito.TotalItems)</span>
+                            <span>@subtotal.ToString("C", new System.Globalization.CultureInfo("es-ES"))</span>
+                        </div>
+                        <div class="flex justify-between text-base-content/30 font-medium">
+                            <span>IVA (21%)</span>
+                            <span>@iva.ToString("C", new System.Globalization.CultureInfo("es-ES"))</span>
+                        </div>
+                        <div class="flex justify-between text-base-content/30 font-medium">
+                            <span>Envío</span>
+                            <span class="text-primary font-bold">Gratis</span>
+                        </div>
+                        <div class="h-px bg-base-300/10 !my-4"></div>
+                        <div class="flex justify-between font-black text-lg">
+                            <span>Total</span>
+                            <span class="text-primary price-display">@total.ToString("C", new System.Globalization.CultureInfo("es-ES"))</span>
+                        </div>
+                    </div>
+
+                    <a asp-page="/Pago" class="btn btn-primary w-full mt-6 rounded-xl font-bold h-12 text-sm gap-2">
+                        <i class="fa-solid fa-lock text-xs"></i>
+                        Pagar ahora
+                    </a>
+
+                    <a asp-page="/Index" class="btn btn-ghost btn-sm w-full mt-2 rounded-xl text-xs font-medium text-base-content/25 hover:text-primary">
+                        <i class="fa-solid fa-arrow-left mr-1 text-[9px]"></i>Seguir comprando
+                    </a>
+
+                    <div class="flex items-center justify-center gap-4 mt-5 pt-4 border-t border-base-300/8">
+                        <i class="fa-solid fa-shield-halved text-primary/25 text-sm"></i>
+                        <i class="fa-solid fa-truck text-primary/25 text-sm"></i>
+                        <i class="fa-solid fa-rotate-left text-primary/25 text-sm"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+    else
+    {
+        <!-- Carrito vacío -->
+        <div class="min-h-[50vh] flex flex-col items-center justify-center text-center">
+            <div class="w-20 h-20 rounded-2xl bg-primary/5 flex items-center justify-center mb-5 animate-float">
+                <i class="fa-solid fa-bag-shopping text-3xl text-primary/20"></i>
+            </div>
+            <h1 class="text-2xl font-black tracking-tight mb-2">Carrito vacío</h1>
+            <p class="text-base-content/30 text-sm max-w-sm mb-6">No tienes productos en tu carrito. Explora nuestra tienda y encuentra algo que te guste.</p>
+            <a asp-page="/Index" class="btn btn-primary btn-sm rounded-xl font-bold gap-2">
+                <i class="fa-solid fa-bag-shopping text-xs"></i>
+                Explorar productos
+            </a>
+        </div>
+    }
+</div>

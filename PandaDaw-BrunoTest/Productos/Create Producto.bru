@@ -1,0 +1,32 @@
+meta {
+  name: Create Producto
+  type: http
+  seq: 6
+}
+
+post {
+  url: {{baseUrl}}/Productos
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{adminToken}}
+}
+
+body:json {
+  {
+    "nombre": "Producto Test Bruno",
+    "precio": 99.99,
+    "stock": 10,
+    "categoria": "Audio"
+  }
+}
+
+assert {
+  res.status: eq 201
+  res.body.nombre: eq Producto Test Bruno
+  res.body.precio: eq 99.99
+  res.body.stock: eq 10
+  res.body.categoria: eq Audio
+}
