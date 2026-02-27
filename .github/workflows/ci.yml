@@ -2,9 +2,9 @@ name: CI/CD Pipeline
 
 on:
   push:
-    branches: [main, dev, features]
+    branches: [master, dev, features]
   pull_request:
-    branches: [main, dev, features]
+    branches: [master]
 
 jobs:
   build:
@@ -139,7 +139,7 @@ jobs:
     runs-on: ubuntu-latest
     if: >-
       github.event_name == 'push' &&
-      github.ref == 'refs/heads/dev' &&
+      github.ref == 'refs/heads/master' &&
       needs.build.result == 'success' &&
       needs.test-unit.result == 'success' &&
       needs.test-integration.result == 'success' &&
