@@ -1,10 +1,10 @@
-name: Build
+name: CI/CD Pipeline
 
 on:
   push:
-    branches: [main, dev, features]
+    branches: [master, dev, features]
   pull_request:
-    branches: [main, dev, features]
+    branches: [master]
 
 jobs:
   build:
@@ -13,78 +13,96 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: '10.0'
+        with: { dotnet-version: '10.0' }
       - run: dotnet build PandaDaw.sln
       - run: dotnet publish PandaBack/PandaBack.csproj -c Release -o ./publish
-  
+
   docs:
+    name: Documentación
     runs-on: ubuntu-latest
-    needs: build
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
-        with: { dotnet-version: '10.0' }
-      - name: Generar HTML Bonito
+        with:
+          dotnet-version: '10.0'
+      - name: Generar documentación
         run: |
           dotnet tool install -g docfx
+          
+          echo '# Documentacion de PandaDaw' > index.md
+          echo 'Bienvenido a la documentacion oficial del codigo fuente de nuestra app de ahorro.' >> index.md
+          
+          echo '- name: Inicio' > toc.yml
+          echo '  href: index.md' >> toc.yml
+          echo '- name: Codigo Fuente' >> toc.yml
+          echo '  href: api/' >> toc.yml
+          
           cat << 'EOF' > docfx.json
           {
             "metadata": [{
-              "src": [
-                { "files": ["PandaBack/PandaBack.csproj", "PandaDawRazor/PandaDawRazor.csproj"] }
-              ],
+              "src": [{ "files": ["PandaBack/PandaBack.csproj", "PandaDawRazor/PandaDawRazor.csproj"] }],
               "dest": "api"
             }],
             "build": {
-              "content": [{ "files": ["api/**"] }],
+              "content": [
+                {"files": ["api/**"]},
+                {"files": ["index.md", "toc.yml"]} 
+              ],
               "dest": "_site",
               "template": ["default", "modern"]
             }
           }
           EOF
+          
           docfx metadata
           docfx build
-      - uses: actions/upload-artifact@v4
-        with:
-          name: Web-Docs
-          path: _site
+      - uses: actions/upload-pages-artifact@v3
+        with: { path: '_site' }
+      - uses: actions/deploy-pages@v4
 
-  test:
-    name: Test
+  test-unit:
+    name: Tests Unitarios
+    needs: build
     runs-on: ubuntu-latest
-    needs: docs
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '10.0'
-      - run: dotnet test Tests/Tests.csproj --verbosity normal
+      - run: dotnet test Tests/Tests.csproj --filter "FullyQualifiedName!~Integration" --verbosity normal
 
-  bruno:
-    name: Bruno
+  test-integration:
+    name: Tests Integración
+    needs: build
     runs-on: ubuntu-latest
-    needs: test
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '10.0'
+      - run: dotnet test Tests/Tests.csproj --filter "FullyQualifiedName~Integration" --verbosity normal
+
+  test-bruno:
+    name: Bruno API Tests
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with: { dotnet-version: '10.0' }
       - run: docker compose up -d
       - run: dotnet run --project PandaBack/PandaBack.csproj --launch-profile "http" &
       - run: sleep 10
-      - name: Run Bruno Tests
-        run: cd PandaDaw-BrunoTest && npx @usebruno/cli run --env local
+      - run: cd PandaDaw-BrunoTest && npx @usebruno/cli run --env local
 
-  playwright:
-    name: Playwright
+  test-playwright:
+    name: Playwright E2E
+    needs: build
     runs-on: ubuntu-latest
-    needs: bruno
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: '10.0'
+        with: { dotnet-version: '10.0' }
       - run: docker compose up -d
       - run: dotnet run --project PandaBack/PandaBack.csproj --launch-profile "http" &
       - run: dotnet run --project PandaDawRazor/PandaDawRazor.csproj &
@@ -92,3 +110,70 @@ jobs:
       - run: dotnet build PandaDaw-Playwright/PandaDaw-Playwright.csproj
       - run: pwsh PandaDaw-Playwright/bin/Debug/net10.0/playwright.ps1 install --with-deps
       - run: dotnet test PandaDaw-Playwright/PandaDaw-Playwright.csproj --verbosity normal
+
+  summary:
+    name: Resumen
+    needs: [build, docs, test-unit, test-integration, test-bruno, test-playwright]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Crear resumen
+        run: |
+          echo "## 🐼 Resumen del Pipeline CI/CD de PandaDaw" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Trabajo | Estado |" >> $GITHUB_STEP_SUMMARY
+          echo "|---------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| 🔨 Compilación | ${{ needs.build.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| 📚 Documentación | ${{ needs.docs.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🧪 Tests Unitarios | ${{ needs.test-unit.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🗄️ Tests Integración | ${{ needs.test-integration.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🔗 Tests API Bruno | ${{ needs.test-bruno.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🎭 Tests E2E Playwright | ${{ needs.test-playwright.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          FAILED=false
+          for result in "${{ needs.build.result }}" "${{ needs.test-unit.result }}" "${{ needs.test-integration.result }}" "${{ needs.test-bruno.result }}" "${{ needs.test-playwright.result }}"; do
+            if [[ "$result" != "success" && "$result" != "skipped" ]]; then
+              FAILED=true
+            fi
+          done
+          if [[ "$FAILED" == "false" ]]; then
+            echo "✅ **¡Todas las comprobaciones pasaron!**" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **Algunas comprobaciones fallaron.**" >> $GITHUB_STEP_SUMMARY
+          fi
+
+  deploy:
+    name: Deploy a Render
+    needs: [summary, build, test-unit, test-integration, test-bruno, test-playwright]
+    runs-on: ubuntu-latest
+    if: >-
+      github.event_name == 'push' &&
+      github.ref == 'refs/heads/master' &&
+      needs.build.result == 'success' &&
+      needs.test-unit.result == 'success' &&
+      needs.test-integration.result == 'success' &&
+      needs.test-bruno.result == 'success' &&
+      needs.test-playwright.result == 'success'
+    steps:
+      - name: Desplegar PandaBack (API)
+        run: |
+          curl -s -o /dev/null -w "%{http_code}" \
+            "${{ secrets.RENDER_DEPLOY_HOOK_BACKEND }}" | grep -q "2.." \
+            && echo "✅ Despliegue de PandaBack lanzado" \
+            || (echo "❌ Error al lanzar el despliegue de PandaBack" && exit 1)
+      - name: Desplegar PandaDawRazor (Frontend)
+        run: |
+          curl -s -o /dev/null -w "%{http_code}" \
+            "${{ secrets.RENDER_DEPLOY_HOOK_FRONTEND }}" | grep -q "2.." \
+            && echo "✅ Despliegue de PandaDawRazor lanzado" \
+            || (echo "❌ Error al lanzar el despliegue de PandaDawRazor" && exit 1)
+      - name: Resumen del despliegue
+        run: |
+          echo "## 🚀 Despliegue en Render" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Servicio | Estado |" >> $GITHUB_STEP_SUMMARY
+          echo "|----------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| 🔧 PandaBack (API) | ✅ Lanzado |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🌐 PandaDawRazor (Frontend) | ✅ Lanzado |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "> Los servicios tardarán unos minutos en estar disponibles." >> $GITHUB_STEP_SUMMARY
