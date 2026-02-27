@@ -1,0 +1,31 @@
+meta {
+  name: Update Producto
+  type: http
+  seq: 8
+}
+
+put {
+  url: {{baseUrl}}/Productos/1
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{adminToken}}
+}
+
+body:json {
+  {
+    "nombre": "Producto Actualizado",
+    "precio": 149.99,
+    "stock": 20,
+    "categoria": "Audio"
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.nombre: eq Producto Actualizado
+  res.body.precio: eq 149.99
+  res.body.stock: eq 20
+}

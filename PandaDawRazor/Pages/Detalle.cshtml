@@ -1,0 +1,215 @@
+@page "{id:long}"
+@model PandaDawRazor.Pages.DetalleModel
+@{
+    ViewData["Title"] = Model.Producto?.Nombre ?? "Producto";
+    Layout = "_Layout";
+    var promedio = Model.Valoraciones.Any() ? Model.Valoraciones.Average(v => v.Estrellas) : 0;
+}
+
+<div class="max-w-7xl mx-auto px-4 py-12">
+    @if (Model.Producto == null)
+    {
+        <div class="card bg-base-100 shadow-lg border-2 border-primary/20">
+            <div class="card-body items-center text-center py-20 px-8">
+                <div class="w-24 h-24 rounded-full bg-primary/10 flex items-center justify-center mb-6">
+                    <i class="fa-solid fa-box-open text-5xl text-primary"></i>
+                </div>
+                <h2 class="text-3xl font-bold text-primary mb-3">Producto no encontrado</h2>
+                <p class="text-lg text-base-content/70 max-w-md mb-6">El producto que buscas no existe o ha sido eliminado.</p>
+                <a asp-page="/Index" class="btn btn-primary btn-lg font-bold gap-2">
+                    <i class="fa-solid fa-arrow-left text-lg"></i>
+                    Volver al catálogo
+                </a>
+            </div>
+        </div>
+    }
+    else
+    {
+        <!-- Breadcrumb -->
+        <div class="text-sm breadcrumbs mb-8 px-2">
+            <ul class="text-base-content/70 font-medium">
+                <li><a asp-page="/Index" class="hover:text-primary transition-colors">Inicio</a></li>
+                <li><a asp-page="/Index" asp-route-categoria="@Model.Producto.Category" class="hover:text-primary transition-colors">@Model.Producto.Category</a></li>
+                <li class="text-primary font-bold">@Model.Producto.Nombre</li>
+            </ul>
+        </div>
+
+        <!-- Producto -->
+        <div class="card bg-base-100 shadow-xl border border-base-300 overflow-hidden">
+            <div class="flex flex-col lg:flex-row">
+                <!-- Imagen -->
+                <figure class="lg:w-1/2 bg-gradient-to-br from-primary/5 to-secondary/5 overflow-hidden relative">
+                    @if (!string.IsNullOrEmpty(Model.Producto.Imagen))
+                    {
+                        <img src="@Model.Producto.Imagen" alt="@Model.Producto.Nombre"
+                             class="w-full h-80 lg:h-[500px] object-cover hover:scale-105 transition-transform duration-300" />
+                    }
+                    else
+                    {
+                        <div class="w-full h-80 lg:h-[500px] flex items-center justify-center bg-gradient-to-br from-primary/20 to-secondary/20">
+                            <i class="fa-solid fa-box text-8xl text-primary/30"></i>
+                        </div>
+                    }
+                    <!-- Badge flotante -->
+                    <span class="badge badge-primary absolute top-5 left-5 shadow-lg font-bold text-[10px] uppercase tracking-wider rounded-xl px-3.5">@Model.Producto.Category</span>
+                </figure>
+
+                <!-- Info -->
+                <div class="lg:w-1/2 p-8 lg:p-10 flex flex-col bg-gradient-to-b from-base-100 to-base-50">
+                    <div class="flex items-start justify-between gap-4 mb-4">
+                        <div class="flex-1">
+                            <span class="badge badge-primary badge-lg font-bold text-white mb-3 gap-2">
+                                <i class="fa-solid fa-tag"></i> @Model.Producto.Category
+                            </span>
+                            <h1 class="text-4xl lg:text-5xl font-bold text-primary leading-tight">@Model.Producto.Nombre</h1>
+                        </div>
+                        @if (Model.EstaAutenticado)
+                        {
+                            <form method="post" asp-page-handler="ToggleFavorito" asp-route-productoId="@Model.Producto.Id" asp-route-favoritoId="@Model.FavoritoId">
+                                <button type="submit" class="btn btn-circle btn-lg shadow-lg bg-white border-2 border-base-300 hover:bg-error hover:border-error transition-all duration-200">
+                                    <i class="fa-@(Model.EsFavorito ? "solid" : "regular") fa-heart text-3xl @(Model.EsFavorito ? "text-error" : "text-error/40")"></i>
+                                </button>
+                            </form>
+                        }
+                    </div>
+                    <span class="text-xs text-base-content/30 font-medium">
+                        @promedio.ToString("0.0") · @Model.Valoraciones.Count @(Model.Valoraciones.Count == 1 ? "opinión" : "opiniones")
+                    </span>
+
+                    <!-- Rating -->
+                    <div class="flex items-center gap-4 mt-6 pb-6 border-b-2 border-base-200">
+                        <div class="rating rating-md gap-1">
+                            @for (int i = 1; i <= 5; i++)
+                            {
+                                <input type="radio" class="mask mask-star-2 bg-warning" disabled
+                                       @(i <= Math.Round(promedio) ? "checked" : "") />
+                            }
+                        </div>
+                        <span class="text-base font-semibold text-base-content/80">
+                            <span class="text-2xl text-primary font-bold">@promedio.ToString("0.0")</span> (@Model.Valoraciones.Count @(Model.Valoraciones.Count == 1 ? "valoración" : "valoraciones"))
+                        </span>
+                    </div>
+
+                    <!-- Descripción -->
+                    <p class="text-lg text-base-content/75 mt-8 flex-1 leading-relaxed">
+                        @(Model.Producto.Descripcion ?? "Sin descripción disponible para este producto.")
+                    </p>
+
+                    <!-- Precio y compra -->
+                    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 mt-8 pt-6 border-t-2 border-base-200">
+                        <div>
+                            <p class="text-sm font-semibold text-base-content/60 mb-2">Precio</p>
+                            <span class="text-5xl font-bold text-primary">
+                                @Model.Producto.Precio.ToString("C", new System.Globalization.CultureInfo("es-ES"))
+                            </span>
+                            @if (Model.Producto.Stock > 0)
+                            {
+                                <p class="text-lg text-success flex items-center gap-2 mt-3 font-semibold">
+                                    <i class="fa-solid fa-check-circle text-xl"></i>
+                                    En stock (@Model.Producto.Stock disponibles)
+                                </p>
+                            }
+                            else
+                            {
+                                <p class="text-lg text-error flex items-center gap-2 mt-3 font-semibold">
+                                    <i class="fa-solid fa-times-circle text-xl"></i>
+                                    Agotado
+                                </p>
+                            }
+                        </div>
+
+                        @if (Model.Producto.Stock > 0)
+                        {
+                            <form method="post" asp-page-handler="AddToCart" asp-route-productoId="@Model.Producto.Id">
+                                <button type="submit" class="btn btn-primary btn-xl font-bold text-lg gap-3 shadow-lg hover:shadow-xl transition-all duration-200">
+                                    <i class="fa-solid fa-cart-plus text-2xl"></i>
+                                    Añadir al carrito
+                                </button>
+                            </form>
+                        }
+                        else
+                        {
+                            <button class="btn btn-xl" disabled>
+                                <i class="fa-solid fa-cart-plus text-2xl"></i>
+                                No disponible
+                            </button>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Valoraciones en tiempo real (Blazor Component) -->
+        <component type="typeof(PandaDawRazor.Components.ValoracionesRealtime)" render-mode="Server"
+                   param-ProductoId="@Model.Producto.Id"
+                   param-UserId="@Model.UserId"
+                   param-EstaAutenticado="@Model.EstaAutenticado"
+                   param-UsuarioNombre="@(HttpContext.Session.GetString("UserName"))" />
+
+        <!-- Fallback: Static ratings display if Blazor doesn't load -->
+        <noscript>
+            <div class="mt-16">
+                <h2 class="text-4xl font-bold mb-10 flex items-center gap-3 text-primary">
+                    <i class="fa-solid fa-star text-warning text-3xl"></i>
+                    Valoraciones
+                    <span class="text-2xl text-base-content/60">(@Model.Valoraciones.Count)</span>
+                </h2>
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    @if (Model.EstaAutenticado)
+                    {
+                        <div class="card bg-base-100 shadow-xl border-2 border-primary/20 rounded-2xl">
+                            <div class="card-body items-center text-center">
+                                <p class="text-lg text-base-content/70">Inicia sesión para valorar</p>
+                                <a href="/Login" class="btn btn-primary mt-4">Iniciar sesión</a>
+                            </div>
+                        </div>
+                    }
+                    <div class="lg:col-span-2">
+                        @if (!Model.Valoraciones.Any())
+                        {
+                            <div class="card bg-base-100 shadow-xl border-2 border-primary/10 rounded-2xl">
+                                <div class="card-body items-center text-center py-16">
+                                    <p class="font-bold text-2xl text-base-content mb-2">Sin valoraciones todavía</p>
+                                    <p class="text-base text-base-content/60">¡Sé el primero en valorar este producto!</p>
+                                </div>
+                            </div>
+                        }
+                        else
+                        {
+                            @foreach (var v in Model.Valoraciones.OrderByDescending(x => x.Fecha).Take(10))
+                            {
+                                <div class="card bg-base-100 shadow-md border border-base-300 rounded-2xl mb-4">
+                                    <div class="card-body py-5">
+                                        <div class="flex items-center justify-between mb-3">
+                                            <div class="flex items-center gap-3">
+                                                <div class="avatar">
+                                                    <div class="w-12 h-12 rounded-full ring ring-primary">
+                                                        <img src="https://api.dicebear.com/7.x/initials/svg?seed=@(v.UsuarioNombre ?? "U")" />
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <p class="font-bold text-base text-primary">@(v.UsuarioNombre ?? "Usuario")</p>
+                                                    <p class="text-sm text-base-content/50">@v.Fecha.ToString("dd MMM yyyy")</p>
+                                                </div>
+                                            </div>
+                                            <div class="rating rating-sm">
+                                                @for (int i = 1; i <= 5; i++)
+                                                {
+                                                    <input type="radio" class="mask mask-star-2 bg-warning" disabled checked="@(i <= v.Estrellas)" />
+                                                }
+                                            </div>
+                                        </div>
+                                        @if (!string.IsNullOrEmpty(v.Resena))
+                                        {
+                                            <p class="text-base text-base-content/80">@v.Resena</p>
+                                        }
+                                    </div>
+                                </div>
+                            }
+                        }
+                    </div>
+                </div>
+            </div>
+        </noscript>
+    }
+</div>

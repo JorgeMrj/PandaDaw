@@ -1,0 +1,623 @@
+@using PandaBack.Dtos.Valoraciones
+@using PandaBack.Services
+@using PandaDawRazor.Services
+@using PandaDawRazor.Hubs
+@using Microsoft.AspNetCore.SignalR.Client
+@inject IValoracionService ValoracionService
+@inject NotificacionService NotificacionService
+@inject SignalRNotificacionService SignalRNotificacionService
+@inject NavigationManager Navigation
+@implements IAsyncDisposable
+
+<div class="mt-16" id="valoraciones-section">
+    <!-- Connection Status (debug) -->
+    @if (!_hubConnected)
+    {
+        <div class="text-xs text-warning mb-2">
+            <i class="fa-solid fa-circle-notch fa-spin mr-1"></i> Conectando en tiempo real...
+        </div>
+    }
+    else
+    {
+        <div class="text-xs text-success mb-2" style="display:none">
+            <i class="fa-solid fa-wifi mr-1"></i> Tiempo real activo
+        </div>
+    }
+    <h2 class="text-4xl font-bold mb-10 flex items-center gap-3 text-primary">
+        <i class="fa-solid fa-star text-warning text-3xl"></i>
+        Valoraciones
+        <span class="text-2xl text-base-content/60">(@valoraciones.Count)</span>
+        @if (cargando)
+        {
+            <span class="loading loading-spinner loading-sm text-primary ml-2"></span>
+        }
+        @if (hayNueva)
+        {
+            <span class="badge badge-success badge-sm animate-bounce ml-2 gap-1">
+                <i class="fa-solid fa-bolt text-[8px]"></i> En vivo
+            </span>
+        }
+    </h2>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <!-- Formulario de valoración -->
+        @if (EstaAutenticado)
+        {
+            <div class="card bg-base-100 shadow-xl border-2 border-primary/20 rounded-2xl">
+                <div class="card-body">
+                    <h3 class="font-bold text-xl text-primary mb-6 flex items-center gap-2">
+                        <i class="fa-solid fa-pen-to-square"></i>
+                        Deja tu valoración
+                    </h3>
+
+                    <div class="form-control mb-6">
+                        <label class="label">
+                            <span class="label-text font-bold text-base text-primary">Puntuación</span>
+                        </label>
+                        <div class="flex gap-2 justify-center">
+                            @for (int i = 1; i <= 5; i++)
+                            {
+                                var star = i;
+                                <button type="button"
+                                        class="transition-transform hover:scale-125 focus:outline-none bg-transparent border-0 p-1"
+                                        @onclick="@(() => SeleccionarEstrella(star))">
+                                    <i class="@(star <= estrellas ? "fa-solid" : "fa-regular") fa-star text-3xl @(star <= estrellas ? "text-warning" : "text-base-content/30")"></i>
+                                </button>
+                            }
+                        </div>
+                        <div class="text-center mt-2">
+                            <span class="text-sm font-semibold text-warning">
+                                @estrellas ★ (@GetTextoEstrellas())
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="form-control mb-6">
+                        <label class="label">
+                            <span class="label-text font-bold text-base text-primary">Tu opinión</span>
+                        </label>
+                        <textarea @bind="resena"
+                                  class="textarea textarea-bordered h-32 focus:textarea-primary text-base font-medium border-2 border-base-300 focus:border-primary rounded-xl"
+                                  placeholder="¿Qué te ha parecido este producto? Escribe tu experiencia..."></textarea>
+                    </div>
+
+                    <button type="button"
+                            class="btn btn-primary btn-lg w-full font-bold gap-2 rounded-xl shadow-lg hover:shadow-xl transition-all"
+                            disabled="@enviando"
+                            @onclick="EnviarValoracion">
+                        @if (enviando)
+                        {
+                            <span class="loading loading-spinner loading-sm"></span>
+                            <span>Enviando...</span>
+                        }
+                        else
+                        {
+                            <i class="fa-solid fa-paper-plane"></i>
+                            <span>Enviar valoración</span>
+                        }
+                    </button>
+
+                    @if (!string.IsNullOrEmpty(mensajeError))
+                    {
+                        <div class="alert alert-error mt-4 rounded-xl text-sm shadow-lg">
+                            <i class="fa-solid fa-circle-exclamation"></i>
+                            <span>@mensajeError</span>
+                        </div>
+                    }
+                    @if (!string.IsNullOrEmpty(mensajeExito))
+                    {
+                        <div class="alert alert-success mt-4 rounded-xl text-sm shadow-lg bg-success/20 border border-success/30">
+                            <i class="fa-solid fa-check-circle text-success"></i>
+                            <span class="text-success-content">@mensajeExito</span>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="card bg-base-100 shadow-xl border-2 border-primary/10 rounded-2xl">
+                <div class="card-body items-center text-center py-16">
+                    <div class="w-24 h-24 rounded-full bg-primary/10 flex items-center justify-center mb-4 animate-pulse">
+                        <i class="fa-solid fa-user-lock text-5xl text-primary"></i>
+                    </div>
+                    <p class="text-xl font-semibold text-base-content/80 mb-4">Inicia sesión para valorar</p>
+                    <p class="text-sm text-base-content/50 mb-6">Comparte tu experiencia con otros usuarios</p>
+                    <a href="/Login" class="btn btn-primary btn-md font-bold gap-2 rounded-xl">
+                        <i class="fa-solid fa-right-to-bracket"></i>
+                        Iniciar sesión
+                    </a>
+                </div>
+            </div>
+        }
+
+        <!-- Lista de valoraciones en tiempo real -->
+        <div class="lg:col-span-2 flex flex-col gap-5">
+            @if (cargando && !valoraciones.Any())
+            {
+                @for (int i = 0; i < 3; i++)
+                {
+                    <div class="card bg-base-100 shadow-md border border-base-300 rounded-2xl">
+                        <div class="card-body py-6">
+                            <div class="flex items-center gap-4 mb-4">
+                                <div class="w-12 h-12 rounded-full bg-base-200 animate-pulse"></div>
+                                <div class="flex-1">
+                                    <div class="h-4 w-32 bg-base-200 rounded animate-pulse mb-2"></div>
+                                    <div class="h-3 w-24 bg-base-200 rounded animate-pulse"></div>
+                                </div>
+                                <div class="rating rating-sm gap-1">
+                                    <input type="radio" class="mask mask-star-2 bg-base-200" disabled />
+                                    <input type="radio" class="mask mask-star-2 bg-base-200" disabled />
+                                    <input type="radio" class="mask mask-star-2 bg-base-200" disabled />
+                                    <input type="radio" class="mask mask-star-2 bg-base-200" disabled />
+                                    <input type="radio" class="mask mask-star-2 bg-base-200" disabled />
+                                </div>
+                            </div>
+                            <div class="h-4 bg-base-200 rounded animate-pulse w-full mb-2"></div>
+                            <div class="h-4 bg-base-200 rounded animate-pulse w-3/4"></div>
+                        </div>
+                    </div>
+                }
+            }
+            else if (!valoraciones.Any())
+            {
+                <div class="card bg-base-100 shadow-xl border-2 border-primary/10 rounded-2xl">
+                    <div class="card-body items-center text-center py-16">
+                        <div class="w-24 h-24 rounded-full bg-warning/10 flex items-center justify-center mb-4">
+                            <i class="fa-regular fa-star text-5xl text-warning/50"></i>
+                        </div>
+                        <p class="font-bold text-2xl text-base-content mb-2">Sin valoraciones todavía</p>
+                        <p class="text-base font-medium text-base-content/60 mb-4">¡Sé el primero en valorar este producto!</p>
+                        <div class="flex gap-1">
+                            @for (int i = 0; i < 5; i++)
+                            {
+                                <i class="fa-regular fa-star text-warning/30 text-2xl"></i>
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <!-- Promedio de valoraciones -->
+                var promedio = valoraciones.Any() ? valoraciones.Average(v => v.Estrellas) : 0;
+                <div class="bg-base-100 rounded-2xl p-6 shadow-lg border border-base-300 mb-6">
+                    <div class="flex flex-col sm:flex-row items-center justify-center gap-6">
+                        <div class="text-center">
+                            <span class="text-6xl font-black text-primary">@promedio.ToString("0.0")</span>
+                            <div class="flex gap-1 justify-center mt-2">
+                                @for (int i = 1; i <= 5; i++)
+                                {
+                                    <i class="fa-@(i <= Math.Round(promedio) ? "solid" : "regular") fa-star text-2xl @(i <= Math.Round(promedio) ? "text-warning" : "text-base-content/30")"></i>
+                                }
+                            </div>
+                            <p class="text-sm text-base-content/60 mt-1">@valoraciones.Count @(valoraciones.Count == 1 ? "valoración" : "valoraciones")</p>
+                        </div>
+                    </div>
+                </div>
+
+                @foreach (var valoracion in valoraciones.OrderByDescending(v => v.Fecha))
+                {
+                    var esNueva = ultimaValoracionId == valoracion.Id;
+                    <div class="card bg-base-100 shadow-md border border-base-300 hover:shadow-xl hover:border-primary/30 transition-all duration-300 @(esNueva ? "ring-2 ring-primary/50 shadow-primary/20" : "") rounded-2xl"
+                         style="@(esNueva ? "animation: slideInValoracion 0.5s ease-out" : "")">
+                        <div class="card-body py-5">
+                            @if (esNueva)
+                            {
+                                <div class="flex justify-end -mt-2 -mr-2 mb-2">
+                                    <span class="badge badge-primary badge-md gap-1 font-bold shadow-lg animate-pulse">
+                                        <i class="fa-solid fa-bolt text-[7px]"></i> Nueva
+                                    </span>
+                                </div>
+                            }
+                            <div class="flex items-start justify-between gap-4 mb-4">
+                                <div class="flex items-center gap-4">
+                                    <div class="avatar">
+                                        <div class="w-14 h-14 rounded-full ring-2 ring-primary ring-offset-2 ring-offset-base-100 shadow-lg">
+                                            <img src="https://api.dicebear.com/7.x/initials/svg?seed=@(valoracion.UsuarioNombre ?? "U")&backgroundColor=primary" alt="Avatar" />
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <p class="font-bold text-lg text-primary">@(valoracion.UsuarioNombre ?? "Usuario")</p>
+                                        <p class="text-sm font-medium text-base-content/50">@valoracion.Fecha.ToString("dd 'de' MMMM 'de' yyyy · HH:mm", new System.Globalization.CultureInfo("es-ES"))</p>
+                                    </div>
+                                </div>
+                                <div class="rating rating-md gap-1">
+                                    @for (int i = 1; i <= 5; i++)
+                                    {
+                                        var idx = i;
+                                        <input type="radio" class="mask mask-star-2 bg-warning" disabled
+                                               checked="@(idx <= valoracion.Estrellas)" />
+                                    }
+                                </div>
+                            </div>
+                            @if (!string.IsNullOrEmpty(valoracion.Resena))
+                            {
+                                <div class="bg-base-200/50 rounded-xl p-4 border border-base-300/50">
+                                    <p class="text-base text-base-content/80 leading-relaxed">@valoracion.Resena</p>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
+            }
+        </div>
+    </div>
+</div>
+
+<style>
+    @@keyframes slideInValoracion {
+        from {
+            opacity: 0;
+            transform: translateY(-20px) scale(0.97);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+    }
+</style>
+
+@code {
+    [Parameter] public long ProductoId { get; set; }
+    [Parameter] public string? UserId { get; set; }
+    [Parameter] public bool EstaAutenticado { get; set; }
+    [Parameter] public string? UsuarioNombre { get; set; }
+
+    private List<ValoracionResponseDto> valoraciones = new();
+    private int estrellas = 5;
+    private string resena = "";
+    private bool cargando = false;
+    private bool enviando = false;
+    private bool hayNueva = false;
+    private string? mensajeError;
+    private string? mensajeExito;
+    private long? ultimaValoracionId;
+    private CancellationTokenSource? _ctsTimer;
+    private readonly object _lock = new();
+
+    private void SeleccionarEstrella(int star)
+    {
+        if (star >= 1 && star <= 5)
+        {
+            estrellas = star;
+        }
+    }
+
+    private string GetTextoEstrellas() => estrellas switch
+    {
+        1 => "Muy malo",
+        2 => "Malo",
+        3 => "Regular",
+        4 => "Bueno",
+        5 => "Excelente",
+        _ => ""
+    };
+
+    private async Task CargarValoracionesAsync()
+    {
+        cargando = true;
+        mensajeError = null;
+        
+        try
+        {
+            var result = await ValoracionService.GetValoracionesByProductoAsync(ProductoId);
+            if (result.IsSuccess)
+            {
+                valoraciones = result.Value?.ToList() ?? new List<ValoracionResponseDto>();
+            }
+            else
+            {
+                mensajeError = result.Error?.Message ?? "Error al cargar las valoraciones";
+            }
+        }
+        catch (Exception ex)
+        {
+            mensajeError = $"Error inesperado: {ex.Message}";
+        }
+        finally
+        {
+            cargando = false;
+        }
+    }
+
+    private async Task HandleNuevaValoracionAsync(long productoId)
+    {
+        if (productoId != ProductoId) return;
+
+        try
+        {
+            var countAntes = valoraciones.Count;
+            await CargarValoracionesAsync();
+
+            if (valoraciones.Count > countAntes && valoraciones.Any())
+            {
+                ultimaValoracionId = valoraciones.OrderByDescending(v => v.Fecha).First().Id;
+                hayNueva = true;
+                StateHasChanged();
+
+                ResetTimer(ref _ctsTimer, async () =>
+                {
+                    await InvokeAsync(() =>
+                    {
+                        hayNueva = false;
+                        ultimaValoracionId = null;
+                        StateHasChanged();
+                    });
+                }, 4000);
+            }
+            else
+            {
+                StateHasChanged();
+            }
+        }
+        catch
+        {
+            StateHasChanged();
+        }
+    }
+
+    private void HandleNuevaValoracion(long productoId)
+    {
+        _ = HandleNuevaValoracionAsync(productoId);
+    }
+
+    private void ResetTimer(ref CancellationTokenSource? cts, Action action, int delayMs)
+    {
+        try
+        {
+            cts?.Cancel();
+            cts?.Dispose();
+        }
+        catch { }
+        
+        cts = new CancellationTokenSource();
+        var token = cts.Token;
+        
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await Task.Delay(delayMs, token);
+                if (!token.IsCancellationRequested)
+                {
+                    action();
+                }
+            }
+            catch (TaskCanceledException) { }
+        }, token);
+    }
+
+    private async Task EnviarValoracionAsync()
+    {
+        if (string.IsNullOrEmpty(UserId)) 
+        {
+            mensajeError = "Debes iniciar sesión para valorar";
+            return;
+        }
+
+        mensajeError = null;
+        mensajeExito = null;
+
+        if (estrellas < 1 || estrellas > 5)
+        {
+            mensajeError = "La puntuación debe estar entre 1 y 5";
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(resena))
+        {
+            mensajeError = "Escribe tu opinión sobre el producto";
+            return;
+        }
+
+        if (resena.Length > 2000)
+        {
+            mensajeError = "La opinión no puede exceder 2000 caracteres";
+            return;
+        }
+
+        enviando = true;
+
+        try
+        {
+            var dto = new CreateValoracionDto
+            {
+                ProductoId = ProductoId,
+                Estrellas = estrellas,
+                Resena = resena.Trim()
+            };
+
+            var result = await ValoracionService.CreateValoracionAsync(UserId, dto);
+
+            if (result.IsSuccess)
+            {
+                mensajeExito = "¡Valoración añadida correctamente!";
+                resena = "";
+                var ratingEnviado = estrellas; // Store before reset
+                estrellas = 5;
+
+                await CargarValoracionesAsync();
+                
+                if (valoraciones.Any())
+                {
+                    ultimaValoracionId = valoraciones.OrderByDescending(v => v.Fecha).First().Id;
+                    hayNueva = true;
+                }
+
+                NotificacionService.NotificarNuevaValoracion(ProductoId);
+
+                NotificacionService.EnviarATodos(new Notificacion
+                {
+                    Tipo = "info",
+                    Titulo = "Nueva valoración",
+                    Mensaje = $"{UsuarioNombre ?? "Alguien"} ha valorado este producto con {ratingEnviado}★",
+                    Icono = "fa-solid fa-star"
+                });
+
+                try { 
+                    Console.WriteLine($"Calling SignalR to notify new rating for producto {ProductoId}");
+                    await SignalRNotificacionService.NotificarNuevaValoracionAsync(ProductoId); 
+                    Console.WriteLine($"SignalR notification sent for producto {ProductoId}");
+                } catch (Exception ex) { 
+                    Console.WriteLine($"Error calling SignalR: {ex.Message}");
+                }
+
+                ResetTimer(ref _ctsTimer, () =>
+                {
+                    InvokeAsync(() =>
+                    {
+                        mensajeExito = null;
+                        hayNueva = false;
+                        ultimaValoracionId = null;
+                        StateHasChanged();
+                    });
+                }, 5000);
+            }
+            else
+            {
+                mensajeError = result.Error?.Message ?? "Error al enviar la valoración";
+            }
+        }
+        catch (Exception ex)
+        {
+            mensajeError = $"Error inesperado: {ex.Message}";
+        }
+        finally
+        {
+            enviando = false;
+        }
+    }
+
+    private Task EnviarValoracion() => EnviarValoracionAsync();
+
+    private HubConnection? _hubConnection;
+    private bool _hubConnected = false;
+    private System.Timers.Timer? _pollingTimer;
+
+    protected override async Task OnInitializedAsync()
+    {
+        NotificacionService.OnNuevaValoracion += HandleNuevaValoracion;
+        
+        await InitSignalR();
+        await CargarValoracionesAsync();
+        
+        // Fallback: poll for updates every 5 seconds if SignalR fails
+        StartPolling();
+    }
+    
+    private void StartPolling()
+    {
+        _pollingTimer = new System.Timers.Timer(5000);
+        _pollingTimer.Elapsed += async (s, e) =>
+        {
+            if (!_hubConnected)
+            {
+                await InvokeAsync(async () =>
+                {
+                    await CargarValoracionesAsync();
+                    StateHasChanged();
+                });
+            }
+        };
+        _pollingTimer.Start();
+    }
+
+    private async Task InitSignalR()
+    {
+        try
+        {
+            var hubUrl = Navigation.ToAbsoluteUri("/notificacionhub").ToString();
+            Console.WriteLine($"Connecting to SignalR hub: {hubUrl}");
+            
+            _hubConnection = new HubConnectionBuilder()
+                .WithUrl(hubUrl)
+                .WithAutomaticReconnect(new[] { TimeSpan.Zero, TimeSpan.FromSeconds(2), TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(10) })
+                .Build();
+
+            _hubConnection.On<long>("NuevaValoracion", async (productoId) =>
+            {
+                Console.WriteLine($"SignalR received: NuevaValoracion for product {productoId}, current product: {ProductoId}");
+                if (productoId == ProductoId)
+                {
+                    Console.WriteLine("Reloading ratings...");
+                    await InvokeAsync(async () =>
+                    {
+                        await CargarValoracionesAsync();
+                        hayNueva = true;
+                        StateHasChanged();
+                        Console.WriteLine($"Ratings reloaded. Count: {valoraciones.Count}");
+
+                        ResetTimer(ref _ctsTimer, () =>
+                        {
+                            InvokeAsync(() =>
+                            {
+                                hayNueva = false;
+                                StateHasChanged();
+                            });
+                        }, 4000);
+                    });
+                }
+            });
+
+            _hubConnection.Closed += (error) =>
+            {
+                Console.WriteLine($"SignalR closed: {error?.Message}");
+                _hubConnected = false;
+                return Task.CompletedTask;
+            };
+
+            _hubConnection.Reconnecting += (error) =>
+            {
+                Console.WriteLine($"SignalR reconnecting: {error?.Message}");
+                return Task.CompletedTask;
+            };
+
+            _hubConnection.Reconnected += (connectionId) =>
+            {
+                Console.WriteLine($"SignalR reconnected: {connectionId}");
+                return Task.CompletedTask;
+            };
+
+            await _hubConnection.StartAsync();
+            Console.WriteLine($"Connected, joining group for product {ProductoId}");
+            await _hubConnection.InvokeAsync("JoinProductoGroup", ProductoId);
+            _hubConnected = true;
+            Console.WriteLine("SignalR fully connected and joined group");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"SignalR ERROR: {ex.Message}");
+            _hubConnected = false;
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        NotificacionService.OnNuevaValoracion -= HandleNuevaValoracion;
+        
+        try
+        {
+            _ctsTimer?.Cancel();
+            _ctsTimer?.Dispose();
+        }
+        catch { }
+        
+        try
+        {
+            _pollingTimer?.Stop();
+            _pollingTimer?.Dispose();
+        }
+        catch { }
+
+        if (_hubConnection != null)
+        {
+            try
+            {
+                await _hubConnection.StopAsync();
+                await _hubConnection.DisposeAsync();
+            }
+            catch { }
+        }
+    }
+}

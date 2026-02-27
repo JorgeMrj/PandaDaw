@@ -1,0 +1,812 @@
+@page
+@model AdminPanelModel
+@{
+    ViewData["Title"] = "Panel de Administración";
+    Layout = "_Layout";
+    var tabActual = Model.Tab ?? "productos";
+}
+
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-8">
+        <div>
+            <h1 class="text-2xl sm:text-3xl font-black tracking-tight flex items-center gap-2.5">
+                <i class="fa-solid fa-shield-halved text-accent/60 text-xl"></i>
+                Admin Panel
+            </h1>
+            <p class="text-sm text-base-content/30 font-medium mt-1">Gestiona productos y pedidos de la tienda</p>
+        </div>
+        <button onclick="modal_crear.showModal()" class="btn btn-primary btn-sm rounded-xl font-bold gap-1.5 h-9 min-h-0 px-5 text-xs">
+            <i class="fa-solid fa-plus text-[10px]"></i> Nuevo Producto
+        </button>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tabs tabs-boxed bg-base-300/10 p-1 mb-6 w-fit">
+        <a class="tab @(tabActual == "productos" ? "tab-active" : "")" asp-route-tab="productos">
+            <i class="fa-solid fa-box mr-2"></i> Productos
+        </a>
+        <a class="tab @(tabActual == "pedidos" ? "tab-active" : "")" asp-route-tab="pedidos">
+            <i class="fa-solid fa-receipt mr-2"></i> Pedidos
+            @if (Model.Ventas.Count(v => v.Estado == "Pendiente") > 0)
+            {
+                <span class="badge badge-warning badge-xs ml-1">@Model.Ventas.Count(v => v.Estado == "Pendiente")</span>
+            }
+        </a>
+        <a class="tab @(tabActual == "usuarios" ? "tab-active" : "")" asp-route-tab="usuarios">
+            <i class="fa-solid fa-users mr-2"></i> Usuarios
+            <span class="badge badge-info badge-xs ml-1">@Model.Usuarios.Count</span>
+        </a>
+    </div>
+
+    @if (tabActual == "productos")
+    {
+
+    <!-- Mensajes -->
+    @if (!string.IsNullOrEmpty(Model.SuccessMessage))
+    {
+        <div class="alert alert-success mb-6 rounded-xl text-sm">
+            <i class="fa-solid fa-check-circle text-sm"></i>
+            <span>@Model.SuccessMessage</span>
+        </div>
+    }
+    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+    {
+        <div class="alert alert-error mb-6 rounded-xl text-sm">
+            <i class="fa-solid fa-exclamation-circle text-sm"></i>
+            <span>@Model.ErrorMessage</span>
+        </div>
+    }
+
+    <!-- Stats -->
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+        <div class="bg-base-300/5 rounded-xl p-4 border border-base-300/6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-[9px] font-bold uppercase tracking-widest text-base-content/25">Productos</p>
+                    <span class="text-2xl font-black text-primary price-display">@Model.Productos.Count</span>
+                </div>
+                <i class="fa-solid fa-box text-primary/20 text-lg"></i>
+            </div>
+        </div>
+        <div class="bg-base-300/5 rounded-xl p-4 border border-base-300/6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-[9px] font-bold uppercase tracking-widest text-base-content/25">Activos</p>
+                    <span class="text-2xl font-black text-success price-display">@Model.Productos.Count(p => !p.IsDeleted)</span>
+                </div>
+                <i class="fa-solid fa-check-circle text-success/20 text-lg"></i>
+            </div>
+        </div>
+        <div class="bg-base-300/5 rounded-xl p-4 border border-base-300/6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-[9px] font-bold uppercase tracking-widest text-base-content/25">Eliminados</p>
+                    <span class="text-2xl font-black text-error price-display">@Model.Productos.Count(p => p.IsDeleted)</span>
+                </div>
+                <i class="fa-solid fa-trash text-error/20 text-lg"></i>
+            </div>
+        </div>
+        <div class="bg-base-300/5 rounded-xl p-4 border border-base-300/6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-[9px] font-bold uppercase tracking-widest text-base-content/25">Sin Stock</p>
+                    <span class="text-2xl font-black text-warning price-display">@Model.Productos.Count(p => p.Stock == 0 && !p.IsDeleted)</span>
+                </div>
+                <i class="fa-solid fa-exclamation-triangle text-warning/20 text-lg"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtros -->
+    <div class="bg-base-300/3 rounded-xl border border-base-300/6 p-4 mb-6">
+        <form method="get" class="flex flex-col sm:flex-row gap-3 items-center">
+            <div class="relative flex-1 w-full">
+                <i class="fa-solid fa-search absolute left-3.5 top-1/2 -translate-y-1/2 text-base-content/20 text-xs"></i>
+                <input type="text" name="filtro" value="@Model.Filtro" placeholder="Buscar productos..."
+                       class="input input-bordered w-full pl-10 rounded-xl h-10 text-sm border-base-300/10" />
+            </div>
+            <label class="flex items-center gap-2 cursor-pointer shrink-0">
+                <input type="checkbox" name="mostrarEliminados" value="true" @(Model.MostrarEliminados ? "checked" : "")
+                       class="checkbox checkbox-primary checkbox-sm rounded-lg" />
+                <span class="text-xs font-semibold text-base-content/40">Eliminados</span>
+            </label>
+            <button type="submit" class="btn btn-primary btn-sm rounded-xl font-bold text-xs h-9 min-h-0 px-4 gap-1">
+                <i class="fa-solid fa-filter text-[9px]"></i> Filtrar
+            </button>
+        </form>
+    </div>
+
+    <!-- Tabla / Cards -->
+    @if (Model.Productos.Any())
+    {
+        <!-- Vista tabla desktop -->
+        <div class="hidden md:block bg-base-300/3 rounded-2xl border border-base-300/8 overflow-hidden">
+            <table class="table table-zebra w-full">
+                <thead>
+                    <tr class="border-b border-base-300/10">
+                        <th class="bg-base-300/5 py-3 px-4">ID</th>
+                        <th class="bg-base-300/5 py-3">Producto</th>
+                        <th class="bg-base-300/5 py-3">Categoría</th>
+                        <th class="bg-base-300/5 py-3">Precio</th>
+                        <th class="bg-base-300/5 py-3">Stock</th>
+                        <th class="bg-base-300/5 py-3">Estado</th>
+                        <th class="bg-base-300/5 py-3 px-4">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var producto in Model.Productos)
+                    {
+                        <tr class="@(producto.IsDeleted ? "opacity-35" : "") border-b border-base-300/5 hover:bg-base-300/5 transition-colors">
+                            <td class="font-mono text-xs text-base-content/30 px-4">@producto.Id</td>
+                            <td>
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 rounded-lg bg-base-300/10 overflow-hidden shrink-0 border border-base-300/6">
+                                        @if (!string.IsNullOrEmpty(producto.Imagen))
+                                        {
+                                            <img src="@producto.Imagen" alt="" class="w-full h-full object-cover" />
+                                        }
+                                        else
+                                        {
+                                            <div class="w-full h-full flex items-center justify-center"><i class="fa-solid fa-image text-base-content/10 text-xs"></i></div>
+                                        }
+                                    </div>
+                                    <div class="min-w-0">
+                                        <p class="font-bold text-sm line-clamp-1">@producto.Nombre</p>
+                                        @if (!string.IsNullOrEmpty(producto.Descripcion))
+                                        {
+                                            <p class="text-[10px] text-base-content/25 line-clamp-1">@producto.Descripcion</p>
+                                        }
+                                    </div>
+                                </div>
+                            </td>
+                            <td><span class="text-[10px] font-bold uppercase tracking-wider text-base-content/35 bg-base-300/8 px-2 py-0.5 rounded-md">@producto.Category</span></td>
+                            <td class="font-bold text-sm price-display">@producto.Precio.ToString("C", new System.Globalization.CultureInfo("es-ES"))</td>
+                            <td>
+                                @if (producto.Stock > 10)
+                                {
+                                    <span class="text-sm font-bold text-success">@producto.Stock</span>
+                                }
+                                else if (producto.Stock > 0)
+                                {
+                                    <span class="text-sm font-bold text-warning">@producto.Stock</span>
+                                }
+                                else
+                                {
+                                    <span class="text-sm font-bold text-error">0</span>
+                                }
+                            </td>
+                            <td>
+                                @if (producto.IsDeleted)
+                                {
+                                    <span class="text-[9px] font-bold text-error uppercase tracking-wider">Eliminado</span>
+                                }
+                                else
+                                {
+                                    <span class="text-[9px] font-bold text-success uppercase tracking-wider">Activo</span>
+                                }
+                            </td>
+                            <td class="px-4">
+                                <div class="flex gap-1">
+                                    @if (!producto.IsDeleted)
+                                    {
+                                        <button onclick="abrirModalEditar(@producto.Id, '@producto.Nombre.Replace("'", "\\'")' , '@(producto.Descripcion?.Replace("'", "\\'") ?? "")', @producto.Precio.ToString(System.Globalization.CultureInfo.InvariantCulture), @producto.Stock, '@producto.Category', '@(producto.Imagen ?? "")')"
+                                                class="w-8 h-8 rounded-lg flex items-center justify-center text-info/60 hover:text-info hover:bg-info/8 transition-all" title="Editar">
+                                            <i class="fa-solid fa-edit text-xs"></i>
+                                        </button>
+                                        <form method="post" asp-page-handler="Eliminar" asp-route-id="@producto.Id" class="inline">
+                                            <button type="submit" class="w-8 h-8 rounded-lg flex items-center justify-center text-error/40 hover:text-error hover:bg-error/8 transition-all"
+                                                    title="Eliminar" onclick="return confirm('¿Eliminar este producto?')">
+                                                <i class="fa-solid fa-trash text-xs"></i>
+                                            </button>
+                                        </form>
+                                    }
+                                    else
+                                    {
+                                        <form method="post" asp-page-handler="Restaurar" asp-route-id="@producto.Id" class="inline">
+                                            <button type="submit" class="w-8 h-8 rounded-lg flex items-center justify-center text-success/60 hover:text-success hover:bg-success/8 transition-all" title="Restaurar">
+                                                <i class="fa-solid fa-undo text-xs"></i>
+                                            </button>
+                                        </form>
+                                    }
+                                    <a asp-page="/Detalle" asp-route-id="@producto.Id" class="w-8 h-8 rounded-lg flex items-center justify-center text-primary/40 hover:text-primary hover:bg-primary/8 transition-all" title="Ver">
+                                        <i class="fa-solid fa-eye text-xs"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Vista cards móvil -->
+        <div class="md:hidden flex flex-col gap-3">
+            @foreach (var producto in Model.Productos)
+            {
+                <div class="flex gap-3 p-3 rounded-xl bg-base-300/3 border border-base-300/8 @(producto.IsDeleted ? "opacity-35" : "")">
+                    <div class="w-16 h-16 rounded-lg bg-base-300/10 overflow-hidden shrink-0 border border-base-300/6">
+                        @if (!string.IsNullOrEmpty(producto.Imagen))
+                        {
+                            <img src="@producto.Imagen" alt="" class="w-full h-full object-cover" />
+                        }
+                        else
+                        {
+                            <div class="w-full h-full flex items-center justify-center"><i class="fa-solid fa-image text-base-content/10"></i></div>
+                        }
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <p class="font-bold text-sm line-clamp-1">@producto.Nombre</p>
+                        <div class="flex items-center gap-2 mt-0.5">
+                            <span class="text-sm font-black text-primary price-display">@producto.Precio.ToString("C", new System.Globalization.CultureInfo("es-ES"))</span>
+                            <span class="text-[9px] font-bold uppercase tracking-wider text-base-content/25">@producto.Category</span>
+                        </div>
+                        <div class="flex items-center justify-between mt-2">
+                            <div class="flex items-center gap-2">
+                                <span class="text-xs font-bold @(producto.Stock > 0 ? "text-success" : "text-error")">Stock: @producto.Stock</span>
+                                <span class="text-[9px] font-bold @(producto.IsDeleted ? "text-error" : "text-success") uppercase">@(producto.IsDeleted ? "Eliminado" : "Activo")</span>
+                            </div>
+                            <div class="flex gap-1">
+                                @if (!producto.IsDeleted)
+                                {
+                                    <button onclick="abrirModalEditar(@producto.Id, '@producto.Nombre.Replace("'", "\\'")' , '@(producto.Descripcion?.Replace("'", "\\'") ?? "")', @producto.Precio.ToString(System.Globalization.CultureInfo.InvariantCulture), @producto.Stock, '@producto.Category', '@(producto.Imagen ?? "")')"
+                                            class="w-7 h-7 rounded-md flex items-center justify-center text-info/60 hover:text-info hover:bg-info/8">
+                                        <i class="fa-solid fa-edit text-[10px]"></i>
+                                    </button>
+                                    <form method="post" asp-page-handler="Eliminar" asp-route-id="@producto.Id" class="inline">
+                                        <button type="submit" class="w-7 h-7 rounded-md flex items-center justify-center text-error/40 hover:text-error hover:bg-error/8"
+                                                onclick="return confirm('¿Eliminar?')">
+                                            <i class="fa-solid fa-trash text-[10px]"></i>
+                                        </button>
+                                    </form>
+                                }
+                                else
+                                {
+                                    <form method="post" asp-page-handler="Restaurar" asp-route-id="@producto.Id" class="inline">
+                                        <button type="submit" class="w-7 h-7 rounded-md flex items-center justify-center text-success/60 hover:text-success hover:bg-success/8">
+                                            <i class="fa-solid fa-undo text-[10px]"></i>
+                                        </button>
+                                    </form>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+    else
+    {
+        <div class="text-center py-16">
+            <i class="fa-solid fa-box-open text-3xl text-base-content/10 mb-3"></i>
+            <p class="font-bold text-sm text-base-content/35">No hay productos</p>
+        </div>
+    }
+}
+else if (tabActual == "usuarios")
+{
+    <!-- Stats de Usuarios -->
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+        <div class="bg-base-300/5 rounded-xl p-4 border border-base-300/6">
+            <p class="text-[9px] font-bold uppercase tracking-widest text-base-content/25">Total</p>
+            <span class="text-2xl font-black text-primary price-display">@Model.UsuariosConRoles.Count</span>
+        </div>
+        <div class="bg-info/5 rounded-xl p-4 border border-info/20">
+            <p class="text-[9px] font-bold uppercase tracking-widest text-info/60">Admins</p>
+            <span class="text-2xl font-black text-info price-display">@Model.UsuariosConRoles.Count(u => u.Role == "Admin")</span>
+        </div>
+        <div class="bg-warning/5 rounded-xl p-4 border border-warning/20">
+            <p class="text-[9px] font-bold uppercase tracking-widest text-warning/60">Bloqueados</p>
+            <span class="text-2xl font-black text-warning price-display">@Model.UsuariosConRoles.Count(u => u.EstaBloqueado)</span>
+        </div>
+        <div class="bg-success/5 rounded-xl p-4 border border-success/20">
+            <p class="text-[9px] font-bold uppercase tracking-widest text-success/60">Activos</p>
+            <span class="text-2xl font-black text-success price-display">@Model.UsuariosConRoles.Count(u => !u.EstaBloqueado)</span>
+        </div>
+    </div>
+
+    <!-- Filtro de usuarios -->
+    <div class="bg-base-300/3 rounded-xl border border-base-300/6 p-4 mb-6">
+        <form method="get" class="flex flex-col sm:flex-row gap-3 items-center">
+            <input type="hidden" name="tab" value="usuarios" />
+            <div class="relative flex-1 w-full">
+                <i class="fa-solid fa-search absolute left-3.5 top-1/2 -translate-y-1/2 text-base-content/20 text-xs"></i>
+                <input type="text" name="filtroUsuario" value="@Model.FiltroUsuario" placeholder="Buscar usuarios..."
+                       class="input input-bordered w-full pl-10 rounded-xl h-10 text-sm border-base-300/10" />
+            </div>
+            <button type="submit" class="btn btn-primary btn-sm rounded-xl font-bold text-xs h-9 min-h-0 px-4 gap-1">
+                <i class="fa-solid fa-filter text-[9px]"></i> Buscar
+            </button>
+        </form>
+    </div>
+
+    <!-- Lista de Usuarios -->
+    @if (Model.UsuariosConRoles.Any())
+    {
+        <div class="hidden md:block bg-base-300/3 rounded-2xl border border-base-300/8 overflow-hidden">
+            <table class="table table-zebra w-full">
+                <thead>
+                    <tr class="border-b border-base-300/10">
+                        <th class="bg-base-300/5 py-3 px-4">ID</th>
+                        <th class="bg-base-300/5 py-3">Usuario</th>
+                        <th class="bg-base-300/5 py-3">Email</th>
+                        <th class="bg-base-300/5 py-3">Rol</th>
+                        <th class="bg-base-300/5 py-3">Estado</th>
+                        <th class="bg-base-300/5 py-3">Registrado</th>
+                        <th class="bg-base-300/5 py-3 px-4">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var usuario in Model.UsuariosConRoles)
+                    {
+                        <tr class="border-b border-base-300/5 hover:bg-base-300/5 transition-colors @(usuario.EstaBloqueado ? "opacity-50" : "")">
+                            <td class="font-mono text-xs text-base-content/30 px-4">@usuario.Usuario.Id.Substring(0, 8)</td>
+                            <td>
+                                <div class="flex items-center gap-3">
+                                    <div class="avatar placeholder">
+                                        <div class="bg-primary/10 text-primary rounded-full w-8">
+                                            <span class="text-xs">@usuario.Usuario.UserName?[0].ToString().ToUpper()</span>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <p class="font-bold text-sm">@usuario.Usuario.UserName</p>
+                                        @if (usuario.Role == "Admin")
+                                        {
+                                            <span class="badge badge-xs badge-info">Admin</span>
+                                        }
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="text-sm text-base-content/70">@usuario.Usuario.Email</td>
+                            <td>
+                                @if (usuario.Role == "Admin")
+                                {
+                                    <span class="badge badge-info badge-xs">Admin</span>
+                                }
+                                else
+                                {
+                                    <span class="badge badge-neutral badge-xs">Usuario</span>
+                                }
+                            </td>
+                            <td>
+                                @if (usuario.EstaBloqueado)
+                                {
+                                    <span class="badge badge-error badge-xs">Bloqueado</span>
+                                }
+                                else
+                                {
+                                    <span class="badge badge-success badge-xs">Activo</span>
+                                }
+                            </td>
+                            <td class="text-xs text-base-content/50">@usuario.Usuario.FechaAlta.ToString("dd/MM/yyyy")</td>
+                            <td class="px-4">
+                                <div class="flex gap-1">
+                                    @if (usuario.EstaBloqueado)
+                                    {
+                                        <form method="post" asp-page-handler="DesbloquearUsuario" class="inline">
+                                            <input type="hidden" name="userId" value="@usuario.Usuario.Id" />
+                                            <button type="submit" class="w-8 h-8 rounded-lg flex items-center justify-center text-success/60 hover:text-success hover:bg-success/8 transition-all" title="Desbloquear">
+                                                <i class="fa-solid fa-unlock text-xs"></i>
+                                            </button>
+                                        </form>
+                                    }
+                                    else
+                                    {
+                                        <form method="post" asp-page-handler="BloquearUsuario" class="inline">
+                                            <input type="hidden" name="userId" value="@usuario.Usuario.Id" />
+                                            <button type="submit" class="w-8 h-8 rounded-lg flex items-center justify-center text-warning/60 hover:text-warning hover:bg-warning/8 transition-all" title="Bloquear">
+                                                <i class="fa-solid fa-lock text-xs"></i>
+                                            </button>
+                                        </form>
+                                    }
+                                    @if (usuario.Usuario.Id != HttpContext.Session.GetString("UserId"))
+                                    {
+                                        <form method="post" asp-page-handler="EliminarUsuario" class="inline">
+                                            <input type="hidden" name="userId" value="@usuario.Usuario.Id" />
+                                            <button type="submit" class="w-8 h-8 rounded-lg flex items-center justify-center text-error/40 hover:text-error hover:bg-error/8 transition-all" title="Eliminar" onclick="return confirm('¿Eliminar este usuario?')">
+                                                <i class="fa-solid fa-trash text-xs"></i>
+                                            </button>
+                                        </form>
+                                    }
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Vista cards móvil -->
+        <div class="md:hidden flex flex-col gap-3">
+            @foreach (var usuario in Model.UsuariosConRoles)
+            {
+                <div class="p-4 rounded-xl bg-base-100 border border-base-300/8 @(usuario.EstaBloqueado ? "opacity-50" : "")">
+                    <div class="flex items-start justify-between mb-3">
+                        <div class="flex items-center gap-3">
+                            <div class="avatar placeholder">
+                                <div class="bg-primary/10 text-primary rounded-full w-10">
+                                    <span>@usuario.Usuario.UserName?[0].ToString().ToUpper()</span>
+                                </div>
+                            </div>
+                            <div>
+                                <p class="font-bold">@usuario.Usuario.UserName</p>
+                                <p class="text-xs text-base-content/50">@usuario.Usuario.Email</p>
+                            </div>
+                        </div>
+                        @if (usuario.EstaBloqueado)
+                        {
+                            <span class="badge badge-error badge-xs">Bloqueado</span>
+                        }
+                        else
+                        {
+                            <span class="badge badge-success badge-xs">Activo</span>
+                        }
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <div class="flex gap-1">
+                            @if (usuario.EstaBloqueado)
+                            {
+                                <form method="post" asp-page-handler="DesbloquearUsuario">
+                                    <input type="hidden" name="userId" value="@usuario.Usuario.Id" />
+                                    <button type="submit" class="btn btn-success btn-xs gap-1">
+                                        <i class="fa-solid fa-unlock"></i> Desbloquear
+                                    </button>
+                                </form>
+                            }
+                            else
+                            {
+                                <form method="post" asp-page-handler="BloquearUsuario">
+                                    <input type="hidden" name="userId" value="@usuario.Usuario.Id" />
+                                    <button type="submit" class="btn btn-warning btn-xs gap-1">
+                                        <i class="fa-solid fa-lock"></i> Bloquear
+                                    </button>
+                                </form>
+                            }
+                            @if (usuario.Usuario.Id != HttpContext.Session.GetString("UserId"))
+                            {
+                                <form method="post" asp-page-handler="EliminarUsuario">
+                                    <input type="hidden" name="userId" value="@usuario.Usuario.Id" />
+                                    <button type="submit" class="btn btn-error btn-xs" onclick="return confirm('¿Eliminar?')">
+                                        <i class="fa-solid fa-trash"></i>
+                                    </button>
+                                </form>
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+    else
+    {
+        <div class="text-center py-16">
+            <i class="fa-solid fa-users text-3xl text-base-content/10 mb-3"></i>
+            <p class="font-bold text-sm text-base-content/35">No hay usuarios</p>
+        </div>
+    }
+}
+else if (tabActual == "pedidos")
+{
+    <!-- Stats de Pedidos -->
+    <div class="grid grid-cols-2 lg:grid-cols-5 gap-3 mb-6">
+        <div class="bg-base-300/5 rounded-xl p-4 border border-base-300/6">
+            <p class="text-[9px] font-bold uppercase tracking-widest text-base-content/25">Total</p>
+            <span class="text-2xl font-black text-primary price-display">@Model.Ventas.Count</span>
+        </div>
+        <div class="bg-warning/5 rounded-xl p-4 border border-warning/20">
+            <p class="text-[9px] font-bold uppercase tracking-widest text-warning/60">Pendientes</p>
+            <span class="text-2xl font-black text-warning price-display">@Model.Ventas.Count(v => v.Estado == "Pendiente")</span>
+        </div>
+        <div class="bg-info/5 rounded-xl p-4 border border-info/20">
+            <p class="text-[9px] font-bold uppercase tracking-widest text-info/60">Procesando</p>
+            <span class="text-2xl font-black text-info price-display">@Model.Ventas.Count(v => v.Estado == "Procesando")</span>
+        </div>
+        <div class="bg-secondary/5 rounded-xl p-4 border border-secondary/20">
+            <p class="text-[9px] font-bold uppercase tracking-widest text-secondary/60">Enviados</p>
+            <span class="text-2xl font-black text-secondary price-display">@Model.Ventas.Count(v => v.Estado == "Enviado")</span>
+        </div>
+        <div class="bg-success/5 rounded-xl p-4 border border-success/20">
+            <p class="text-[9px] font-bold uppercase tracking-widest text-success/60">Entregados</p>
+            <span class="text-2xl font-black text-success price-display">@Model.Ventas.Count(v => v.Estado == "Entregado")</span>
+        </div>
+    </div>
+
+    <!-- Lista de Pedidos -->
+    @if (Model.Ventas.Any())
+    {
+        <div class="space-y-4">
+            @foreach (var venta in Model.Ventas)
+            {
+                <div class="bg-base-100 rounded-2xl border border-base-300/10 shadow-md overflow-hidden">
+                    <div class="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <!-- Info Pedido -->
+                        <div class="flex items-start gap-4">
+                            <div class="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                                <i class="fa-solid fa-receipt text-primary text-lg"></i>
+                            </div>
+                            <div>
+                                <div class="flex items-center gap-2 mb-1">
+                                    <span class="font-bold text-lg">Pedido #@venta.Id</span>
+                                    @switch (venta.Estado)
+                                    {
+                                        case "Pendiente":
+                                            <span class="badge badge-warning badge-sm">Pendiente</span>
+                                            break;
+                                        case "Procesando":
+                                            <span class="badge badge-info badge-sm">Procesando</span>
+                                            break;
+                                        case "Enviado":
+                                            <span class="badge badge-secondary badge-sm">Enviado</span>
+                                            break;
+                                        case "Entregado":
+                                            <span class="badge badge-success badge-sm">Entregado</span>
+                                            break;
+                                        case "Cancelado":
+                                            <span class="badge badge-error badge-sm">Cancelado</span>
+                                            break;
+                                    }
+                                </div>
+                                <div class="flex flex-wrap items-center gap-3 text-sm text-base-content/50">
+                                    <span><i class="fa-solid fa-user mr-1"></i>@venta.UsuarioNombre</span>
+                                    <span><i class="fa-solid fa-envelope mr-1"></i>@venta.UsuarioEmail</span>
+                                    <span><i class="fa-solid fa-calendar mr-1"></i>@venta.FechaCompra.ToString("dd/MM/yyyy HH:mm")</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Total y Acciones -->
+                        <div class="flex items-center gap-4">
+                            <div class="text-right">
+                                <p class="text-xs text-base-content/30 font-bold uppercase">Total</p>
+                                <p class="text-xl font-black text-primary">@venta.Total.ToString("C", new System.Globalization.CultureInfo("es-ES"))</p>
+                            </div>
+                            <button onclick="document.getElementById('detalle-@venta.Id').classList.toggle('hidden')" 
+                                    class="btn btn-ghost btn-sm btn-circle">
+                                <i class="fa-solid fa-chevron-down"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Detalle del pedido (expandible) -->
+                    <div id="detalle-@venta.Id" class="hidden border-t border-base-300/10">
+                        <div class="p-4 bg-base-50/50">
+                            <h4 class="font-bold text-sm mb-3 flex items-center gap-2">
+                                <i class="fa-solid fa-box text-base-content/40"></i>
+                                Productos (@venta.Lineas.Count)
+                            </h4>
+                            <div class="space-y-2">
+                                @foreach (var linea in venta.Lineas)
+                                {
+                                    <div class="flex items-center justify-between p-2 rounded-lg bg-base-100 border border-base-300/10">
+                                        <div class="flex items-center gap-3">
+                                            <div class="w-10 h-10 rounded-lg bg-base-200 overflow-hidden">
+                                                @if (!string.IsNullOrEmpty(linea.ProductoImagen))
+                                                {
+                                                    <img src="@linea.ProductoImagen" class="w-full h-full object-cover" />
+                                                }
+                                                else
+                                                {
+                                                    <div class="w-full h-full flex items-center justify-center"><i class="fa-solid fa-image text-base-content/20 text-xs"></i></div>
+                                                }
+                                            </div>
+                                            <div>
+                                                <p class="font-bold text-sm line-clamp-1">@linea.ProductoNombre</p>
+                                                <p class="text-xs text-base-content/40">Qty: @linea.Cantidad × @linea.PrecioUnitario.ToString("C", new System.Globalization.CultureInfo("es-ES"))</p>
+                                            </div>
+                                        </div>
+                                        <span class="font-bold text-sm">@linea.Subtotal.ToString("C", new System.Globalization.CultureInfo("es-ES"))</span>
+                                    </div>
+                                }
+                            </div>
+                            
+                            <!-- Cambiar Estado -->
+                            @if (venta.Estado != "Cancelado" && venta.Estado != "Entregado")
+                            {
+                                <div class="mt-4 pt-4 border-t border-base-300/10">
+                                    <form method="post" asp-page-handler="ActualizarEstado" asp-route-ventaId="@venta.Id" class="flex items-center gap-3">
+                                        <input type="hidden" name="PedidoInput.NuevoEstado" id="estado_@venta.Id" />
+                                        <span class="text-sm font-bold text-base-content/60">Cambiar estado:</span>
+                                        <select onchange="document.getElementById('estado_@venta.Id').value = this.value; this.form.submit()" 
+                                                class="select select-bordered select-sm rounded-lg min-h-0 h-9">
+                                            <option value="">Seleccionar...</option>
+                                            @if (venta.Estado == "Pendiente")
+                                            {
+                                                <option value="Procesando">Procesando</option>
+                                                <option value="Cancelado">Cancelar</option>
+                                            }
+                                            else if (venta.Estado == "Procesando")
+                                            {
+                                                <option value="Enviado">Marcar como Enviado</option>
+                                                <option value="Cancelado">Cancelar</option>
+                                            }
+                                            else if (venta.Estado == "Enviado")
+                                            {
+                                                <option value="Entregado">Marcar como Entregado</option>
+                                            }
+                                        </select>
+                                    </form>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+    else
+    {
+        <div class="text-center py-16">
+            <i class="fa-solid fa-receipt text-3xl text-base-content/10 mb-3"></i>
+            <p class="font-bold text-sm text-base-content/35">No hay pedidos</p>
+        </div>
+    }
+}
+</div>
+
+<!-- Modal Crear -->
+<dialog id="modal_crear" class="modal">
+    <div class="modal-box w-11/12 max-w-lg rounded-2xl p-6">
+        <form method="dialog"><button class="btn btn-sm btn-circle btn-ghost absolute right-3 top-3 text-base-content/30">✕</button></form>
+        <h3 class="font-black text-lg mb-6 flex items-center gap-2">
+            <span class="w-7 h-7 rounded-lg bg-primary/8 flex items-center justify-center"><i class="fa-solid fa-plus text-primary text-[10px]"></i></span>
+            Nuevo Producto
+        </h3>
+        <form method="post" asp-page-handler="Crear" enctype="multipart/form-data" class="space-y-4">
+            <div class="form-control gap-1">
+                <label class="text-[10px] font-bold uppercase tracking-widest text-base-content/30">Nombre *</label>
+                <input type="text" name="ProductoInput.Nombre" required class="input input-bordered w-full rounded-xl h-10 text-sm border-base-300/12" placeholder="Nombre del producto" />
+            </div>
+            <div class="form-control gap-1">
+                <label class="text-[10px] font-bold uppercase tracking-widest text-base-content/30">Descripción</label>
+                <textarea name="ProductoInput.Descripcion" rows="2" class="textarea textarea-bordered w-full rounded-xl text-sm border-base-300/12" placeholder="Descripción"></textarea>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+                <div class="form-control gap-1">
+                    <label class="text-[10px] font-bold uppercase tracking-widest text-base-content/30">Precio *</label>
+                    <input type="number" name="ProductoInput.Precio" step="0.01" min="0" required class="input input-bordered w-full rounded-xl h-10 text-sm border-base-300/12" placeholder="0.00" />
+                </div>
+                <div class="form-control gap-1">
+                    <label class="text-[10px] font-bold uppercase tracking-widest text-base-content/30">Stock *</label>
+                    <input type="number" name="ProductoInput.Stock" min="0" required class="input input-bordered w-full rounded-xl h-10 text-sm border-base-300/12" placeholder="0" />
+                </div>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+                <div class="form-control gap-1">
+                    <label class="text-[10px] font-bold uppercase tracking-widest text-base-content/30">Categoría *</label>
+                    <select name="ProductoInput.Categoria" required class="select select-bordered w-full rounded-xl h-10 text-sm border-base-300/12 min-h-0">
+                        <option value="">Seleccionar</option>
+                        <option value="Audio">Audio</option>
+                        <option value="Imagen">Imagen</option>
+                        <option value="Smartphones">Smartphones</option>
+                        <option value="Laptops">Laptops</option>
+                        <option value="Gaming">Gaming</option>
+                    </select>
+                </div>
+                <div class="form-control gap-1">
+                    <label class="text-[10px] font-bold uppercase tracking-widest text-base-content/30">Imagen</label>
+                    <input type="file" name="ProductoInput.ImagenArchivo" accept="image/*" onchange="previsualizarImagen(this, 'preview_crear')"
+                           class="file-input file-input-bordered w-full rounded-xl h-10 text-sm border-base-300/12 file-input-sm" />
+                </div>
+            </div>
+            <div id="preview_crear" class="hidden">
+                <img src="" alt="Preview" class="w-20 h-20 object-cover rounded-lg border border-base-300/10" />
+            </div>
+            <div class="flex justify-end gap-2 pt-2">
+                <button type="button" onclick="modal_crear.close()" class="btn btn-ghost btn-sm rounded-xl">Cancelar</button>
+                <button type="submit" class="btn btn-primary btn-sm rounded-xl font-bold gap-1 px-5">
+                    <i class="fa-solid fa-save text-[10px]"></i> Crear
+                </button>
+            </div>
+        </form>
+    </div>
+    <form method="dialog" class="modal-backdrop"><button>close</button></form>
+</dialog>
+
+<!-- Modal Editar -->
+<dialog id="modal_editar" class="modal">
+    <div class="modal-box w-11/12 max-w-lg rounded-2xl p-6">
+        <form method="dialog"><button class="btn btn-sm btn-circle btn-ghost absolute right-3 top-3 text-base-content/30">✕</button></form>
+        <h3 class="font-black text-lg mb-6 flex items-center gap-2">
+            <span class="w-7 h-7 rounded-lg bg-info/8 flex items-center justify-center"><i class="fa-solid fa-edit text-info text-[10px]"></i></span>
+            Editar Producto
+        </h3>
+        <form method="post" asp-page-handler="Editar" id="form_editar" enctype="multipart/form-data" class="space-y-4">
+            <input type="hidden" name="id" id="editar_id" />
+            <input type="hidden" name="ProductoInput.ImagenActual" id="editar_imagen_actual" />
+            <div class="form-control gap-1">
+                <label class="text-[10px] font-bold uppercase tracking-widest text-base-content/30">Nombre *</label>
+                <input type="text" name="ProductoInput.Nombre" id="editar_nombre" required class="input input-bordered w-full rounded-xl h-10 text-sm border-base-300/12" />
+            </div>
+            <div class="form-control gap-1">
+                <label class="text-[10px] font-bold uppercase tracking-widest text-base-content/30">Descripción</label>
+                <textarea name="ProductoInput.Descripcion" id="editar_descripcion" rows="2" class="textarea textarea-bordered w-full rounded-xl text-sm border-base-300/12"></textarea>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+                <div class="form-control gap-1">
+                    <label class="text-[10px] font-bold uppercase tracking-widest text-base-content/30">Precio *</label>
+                    <input type="number" name="ProductoInput.Precio" id="editar_precio" step="0.01" min="0" required class="input input-bordered w-full rounded-xl h-10 text-sm border-base-300/12" />
+                </div>
+                <div class="form-control gap-1">
+                    <label class="text-[10px] font-bold uppercase tracking-widest text-base-content/30">Stock *</label>
+                    <input type="number" name="ProductoInput.Stock" id="editar_stock" min="0" required class="input input-bordered w-full rounded-xl h-10 text-sm border-base-300/12" />
+                </div>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+                <div class="form-control gap-1">
+                    <label class="text-[10px] font-bold uppercase tracking-widest text-base-content/30">Categoría *</label>
+                    <select name="ProductoInput.Categoria" id="editar_categoria" required class="select select-bordered w-full rounded-xl h-10 text-sm border-base-300/12 min-h-0">
+                        <option value="Audio">Audio</option>
+                        <option value="Imagen">Imagen</option>
+                        <option value="Smartphones">Smartphones</option>
+                        <option value="Laptops">Laptops</option>
+                        <option value="Gaming">Gaming</option>
+                    </select>
+                </div>
+                <div class="form-control gap-1">
+                    <label class="text-[10px] font-bold uppercase tracking-widest text-base-content/30">Imagen</label>
+                    <input type="file" name="ProductoInput.ImagenArchivo" accept="image/*" onchange="previsualizarImagen(this, 'preview_editar')"
+                           class="file-input file-input-bordered w-full rounded-xl h-10 text-sm border-base-300/12 file-input-sm" />
+                </div>
+            </div>
+            <div id="preview_editar" class="hidden">
+                <p class="text-[10px] font-bold uppercase tracking-widest text-base-content/30 mb-1">Imagen actual</p>
+                <img src="" alt="Preview" class="w-20 h-20 object-cover rounded-lg border border-base-300/10" />
+            </div>
+            <div class="flex justify-end gap-2 pt-2">
+                <button type="button" onclick="modal_editar.close()" class="btn btn-ghost btn-sm rounded-xl">Cancelar</button>
+                <button type="submit" class="btn btn-info btn-sm rounded-xl font-bold gap-1 px-5">
+                    <i class="fa-solid fa-save text-[10px]"></i> Guardar
+                </button>
+            </div>
+        </form>
+    </div>
+    <form method="dialog" class="modal-backdrop"><button>close</button></form>
+</dialog>
+
+@section Scripts {
+    <script>
+        function abrirModalEditar(id, nombre, descripcion, precio, stock, categoria, imagen) {
+            document.getElementById('editar_id').value = id;
+            document.getElementById('editar_nombre').value = nombre;
+            document.getElementById('editar_descripcion').value = descripcion;
+            document.getElementById('editar_precio').value = precio;
+            document.getElementById('editar_stock').value = stock;
+            document.getElementById('editar_categoria').value = categoria;
+            document.getElementById('editar_imagen_actual').value = imagen;
+
+            // Asegurar action y enctype correctos para subida de archivos
+            var form = document.getElementById('form_editar');
+            form.action = window.location.pathname + '?handler=Editar&id=' + id;
+            form.enctype = 'multipart/form-data';
+
+            // Resetear el file input para que no quede un archivo anterior seleccionado
+            var fileInput = form.querySelector('input[type="file"]');
+            if (fileInput) fileInput.value = '';
+
+            // Mostrar preview de imagen actual si existe
+            var previewDiv = document.getElementById('preview_editar');
+            var previewImg = previewDiv.querySelector('img');
+            if (imagen) {
+                previewImg.src = imagen;
+                previewDiv.classList.remove('hidden');
+            } else {
+                previewDiv.classList.add('hidden');
+            }
+
+            modal_editar.showModal();
+        }
+
+        function previsualizarImagen(input, previewId) {
+            var previewDiv = document.getElementById(previewId);
+            var previewImg = previewDiv.querySelector('img');
+            if (input.files && input.files[0]) {
+                var reader = new FileReader();
+                reader.onload = function (e) {
+                    previewImg.src = e.target.result;
+                    previewDiv.classList.remove('hidden');
+                };
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+    </script>
+}

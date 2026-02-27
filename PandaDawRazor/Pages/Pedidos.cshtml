@@ -1,0 +1,153 @@
+@page
+@model PandaDawRazor.Pages.PedidosModel
+@{
+    ViewData["Title"] = "Mis Pedidos";
+    Layout = "_Layout";
+}
+
+<div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Header -->
+    <div class="flex items-end justify-between mb-8">
+        <div>
+            <h1 class="text-2xl sm:text-3xl font-black tracking-tight">Mis Pedidos</h1>
+            <p class="text-sm text-base-content/30 font-medium mt-1">Historial de compras</p>
+        </div>
+        <a asp-page="/Index" class="text-xs font-semibold text-base-content/30 hover:text-primary transition-colors flex items-center gap-1.5">
+            <i class="fa-solid fa-arrow-left text-[9px]"></i> Tienda
+        </a>
+    </div>
+
+    @if (!Model.Pedidos.Any())
+    {
+        <div class="min-h-[50vh] flex flex-col items-center justify-center text-center">
+            <div class="w-20 h-20 rounded-2xl bg-primary/5 flex items-center justify-center mb-5 animate-float">
+                <i class="fa-solid fa-box text-3xl text-primary/20"></i>
+            </div>
+            <h2 class="text-xl font-black tracking-tight mb-2">Sin pedidos</h2>
+            <p class="text-base-content/30 text-sm max-w-sm mb-6">Aún no has realizado ninguna compra.</p>
+            <a asp-page="/Index" class="btn btn-primary btn-sm rounded-xl font-bold gap-2">
+                <i class="fa-solid fa-shopping-cart text-xs"></i> Ir a comprar
+            </a>
+        </div>
+    }
+    else
+    {
+        <!-- Stats compactas -->
+        <div class="grid grid-cols-3 gap-3 mb-8">
+            <div class="bg-base-300/5 rounded-xl p-4 border border-base-300/6 text-center">
+                <span class="text-xl font-black text-primary price-display">@Model.Pedidos.Count</span>
+                <p class="text-[9px] font-bold uppercase tracking-widest text-base-content/25 mt-0.5">Pedidos</p>
+            </div>
+            <div class="bg-base-300/5 rounded-xl p-4 border border-base-300/6 text-center">
+                <span class="text-xl font-black text-secondary price-display">@Model.Pedidos.Sum(p => p.Lineas.Sum(l => l.Cantidad))</span>
+                <p class="text-[9px] font-bold uppercase tracking-widest text-base-content/25 mt-0.5">Productos</p>
+            </div>
+            <div class="bg-base-300/5 rounded-xl p-4 border border-base-300/6 text-center">
+                <span class="text-lg font-black text-accent price-display">@Model.Pedidos.Sum(p => p.Total).ToString("C", new System.Globalization.CultureInfo("es-ES"))</span>
+                <p class="text-[9px] font-bold uppercase tracking-widest text-base-content/25 mt-0.5">Gastado</p>
+            </div>
+        </div>
+
+        <!-- Timeline de pedidos -->
+        <div class="relative">
+            <!-- Línea vertical de timeline -->
+            <div class="absolute left-5 top-0 bottom-0 w-px bg-base-300/10 hidden sm:block"></div>
+
+            <div class="flex flex-col gap-4">
+                @foreach (var pedido in Model.Pedidos.OrderByDescending(p => p.FechaCompra))
+                {
+                    var estadoColor = pedido.Estado switch
+                        {
+                            "Pendiente" => "warning",
+                            "Procesando" => "info",
+                            "Enviado" => "primary",
+                            "Entregado" => "success",
+                            "Cancelado" => "error",
+                            _ => "base-content/30"
+                        };
+                        var estadoIcon = pedido.Estado switch
+                        {
+                            "Pendiente" => "fa-clock",
+                            "Procesando" => "fa-spinner",
+                            "Enviado" => "fa-truck",
+                            "Entregado" => "fa-check-circle",
+                            "Cancelado" => "fa-times-circle",
+                            _ => "fa-question-circle"
+                        };
+
+                    <div class="flex gap-4 sm:gap-6">
+                        <!-- Punto timeline -->
+                        <div class="hidden sm:flex flex-col items-center shrink-0">
+                            <div class="w-10 h-10 rounded-full bg-@estadoColor/10 border-2 border-@estadoColor/30 flex items-center justify-center z-10">
+                                <i class="fa-solid @estadoIcon text-@estadoColor text-xs"></i>
+                            </div>
+                        </div>
+
+                        <!-- Card del pedido -->
+                        <div class="flex-1 bg-base-300/3 rounded-2xl border border-base-300/8 hover:border-primary/10 transition-colors overflow-hidden">
+                            <!-- Header del pedido -->
+                            <div class="flex flex-wrap items-center justify-between gap-3 p-4 sm:p-5">
+                                <div class="flex items-center gap-4">
+                                    <div>
+                                        <span class="text-base font-black price-display">#@pedido.Id</span>
+                                        <p class="text-[10px] text-base-content/25 font-medium">@pedido.FechaCompra.ToString("dd MMM yyyy · HH:mm")</p>
+                                    </div>
+                                </div>
+                                <div class="flex items-center gap-3">
+                                    <span class="inline-flex items-center gap-1 bg-@estadoColor/8 text-@estadoColor border border-@estadoColor/15 text-[9px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-lg">
+                                        <i class="fa-solid @estadoIcon text-[8px] sm:hidden"></i>
+                                        @pedido.Estado
+                                    </span>
+                                    <span class="text-base font-black text-primary price-display">
+                                        @pedido.Total.ToString("C", new System.Globalization.CultureInfo("es-ES"))
+                                    </span>
+                                    @if (pedido.Estado == "Enviado")
+                                    {
+                                        <a asp-page="/Pedidos" asp-route-handler="ConfirmarEntrega" asp-route-id="@pedido.Id"
+                                           class="btn btn-success btn-xs rounded-lg gap-1 px-2"
+                                           title="Confirmar que has recibido el pedido">
+                                            <i class="fa-solid fa-check text-[10px]"></i>
+                                            <span class="text-[10px] font-bold">Recibido</span>
+                                        </a>
+                                    }
+                                    <a asp-page="/Pedidos" asp-page-handler="DescargarFactura" asp-route-id="@pedido.Id"
+                                       class="btn btn-ghost btn-xs rounded-lg text-primary/60 hover:text-primary hover:bg-primary/10 gap-1 px-2"
+                                       title="Descargar factura PDF">
+                                        <i class="fa-solid fa-file-pdf text-[10px]"></i>
+                                        <span class="hidden sm:inline text-[10px] font-bold">Factura</span>
+                                    </a>
+                                </div>
+                            </div>
+
+                            <!-- Productos: tira horizontal de miniaturas -->
+                            <div class="px-4 sm:px-5 pb-4 sm:pb-5">
+                                <div class="flex gap-2 overflow-x-auto scrollbar-none">
+                                    @foreach (var linea in pedido.Lineas)
+                                    {
+                                        <a asp-page="/Detalle" asp-route-id="@linea.ProductoId"
+                                           class="flex items-center gap-2.5 bg-base-300/5 rounded-xl p-2 pr-4 border border-base-300/6 hover:border-primary/15 transition-colors shrink-0">
+                                            @if (!string.IsNullOrEmpty(linea.ProductoImagen))
+                                            {
+                                                <img src="@linea.ProductoImagen" alt="@linea.ProductoNombre" class="w-10 h-10 object-cover rounded-lg" />
+                                            }
+                                            else
+                                            {
+                                                <div class="w-10 h-10 bg-base-300/10 rounded-lg flex items-center justify-center">
+                                                    <i class="fa-solid fa-box text-base-content/10 text-xs"></i>
+                                                </div>
+                                            }
+                                            <div>
+                                                <p class="text-xs font-semibold text-base-content/50 line-clamp-1 max-w-[120px]">@linea.ProductoNombre</p>
+                                                <p class="text-[10px] text-base-content/25">@linea.Cantidad× · @((linea.Cantidad * linea.PrecioUnitario).ToString("C", new System.Globalization.CultureInfo("es-ES")))</p>
+                                            </div>
+                                        </a>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+</div>

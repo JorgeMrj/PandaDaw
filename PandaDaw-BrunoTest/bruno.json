@@ -1,0 +1,15 @@
+{
+  "version": "1",
+  "name": "PandaDaw-BrunoTest",
+  "type": "collection",
+  "ignore": [
+    "node_modules",
+    ".git"
+  ],
+  "size": 0.017345428466796875,
+  "filesCount": 63,
+  "presets": {
+    "requestType": "http",
+    "requestUrl": "http://localhost:5062/"
+  }
+}
