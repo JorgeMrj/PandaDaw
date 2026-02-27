@@ -19,7 +19,7 @@ jobs:
       - run: dotnet publish PandaBack/PandaBack.csproj -c Release -o ./publish
   
   docs:
-    name: Documentacion
+    name: Documentacion 
     runs-on: ubuntu-latest
     needs: build
     permissions:
