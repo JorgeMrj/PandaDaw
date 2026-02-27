@@ -19,7 +19,7 @@ jobs:
       - run: dotnet publish PandaBack/PandaBack.csproj -c Release -o ./publish
 
   docs:
-    name: Docs
+    name: Documentación
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -103,23 +103,23 @@ jobs:
       - run: dotnet test PandaDaw-Playwright/PandaDaw-Playwright.csproj --verbosity normal
 
   summary:
-    name: Summary
+    name: Resumen
     needs: [build, docs, test-unit, test-integration, test-bruno, test-playwright]
     runs-on: ubuntu-latest
     if: always()
     steps:
-      - name: Create summary
+      - name: Crear resumen
         run: |
-          echo "## 🐼 PandaDaw CI/CD Pipeline Summary" >> $GITHUB_STEP_SUMMARY
+          echo "## 🐼 Resumen del Pipeline CI/CD de PandaDaw" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "| Job | Status |" >> $GITHUB_STEP_SUMMARY
-          echo "|-----|--------|" >> $GITHUB_STEP_SUMMARY
-          echo "| 🔨 Build | ${{ needs.build.result }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| 📚 Docs | ${{ needs.docs.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Trabajo | Estado |" >> $GITHUB_STEP_SUMMARY
+          echo "|---------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| 🔨 Compilación | ${{ needs.build.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| 📚 Documentación | ${{ needs.docs.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "| 🧪 Tests Unitarios | ${{ needs.test-unit.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "| 🗄️ Tests Integración | ${{ needs.test-integration.result }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| 🔗 Bruno API Tests | ${{ needs.test-bruno.result }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| 🎭 Playwright E2E | ${{ needs.test-playwright.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🔗 Tests API Bruno | ${{ needs.test-bruno.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🎭 Tests E2E Playwright | ${{ needs.test-playwright.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           FAILED=false
           for result in "${{ needs.build.result }}" "${{ needs.test-unit.result }}" "${{ needs.test-integration.result }}" "${{ needs.test-bruno.result }}" "${{ needs.test-playwright.result }}"; do
@@ -128,9 +128,9 @@ jobs:
             fi
           done
           if [[ "$FAILED" == "false" ]]; then
-            echo "✅ **All checks passed!**" >> $GITHUB_STEP_SUMMARY
+            echo "✅ **¡Todas las comprobaciones pasaron!**" >> $GITHUB_STEP_SUMMARY
           else
-            echo "❌ **Some checks failed.**" >> $GITHUB_STEP_SUMMARY
+            echo "❌ **Algunas comprobaciones fallaron.**" >> $GITHUB_STEP_SUMMARY
           fi
 
   deploy:
@@ -146,25 +146,25 @@ jobs:
       needs.test-bruno.result == 'success' &&
       needs.test-playwright.result == 'success'
     steps:
-      - name: Deploy PandaBack (API)
+      - name: Desplegar PandaBack (API)
         run: |
           curl -s -o /dev/null -w "%{http_code}" \
             "${{ secrets.RENDER_DEPLOY_HOOK_BACKEND }}" | grep -q "2.." \
-            && echo "✅ PandaBack deploy triggered" \
-            || (echo "❌ Failed to trigger PandaBack deploy" && exit 1)
-      - name: Deploy PandaDawRazor (Frontend)
+            && echo "✅ Despliegue de PandaBack lanzado" \
+            || (echo "❌ Error al lanzar el despliegue de PandaBack" && exit 1)
+      - name: Desplegar PandaDawRazor (Frontend)
         run: |
           curl -s -o /dev/null -w "%{http_code}" \
             "${{ secrets.RENDER_DEPLOY_HOOK_FRONTEND }}" | grep -q "2.." \
-            && echo "✅ PandaDawRazor deploy triggered" \
-            || (echo "❌ Failed to trigger PandaDawRazor deploy" && exit 1)
-      - name: Deploy summary
+            && echo "✅ Despliegue de PandaDawRazor lanzado" \
+            || (echo "❌ Error al lanzar el despliegue de PandaDawRazor" && exit 1)
+      - name: Resumen del despliegue
         run: |
-          echo "## 🚀 Deploy to Render" >> $GITHUB_STEP_SUMMARY
+          echo "## 🚀 Despliegue en Render" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "| Service | Status |" >> $GITHUB_STEP_SUMMARY
-          echo "|---------|--------|" >> $GITHUB_STEP_SUMMARY
-          echo "| 🔧 PandaBack (API) | ✅ Triggered |" >> $GITHUB_STEP_SUMMARY
-          echo "| 🌐 PandaDawRazor (Frontend) | ✅ Triggered |" >> $GITHUB_STEP_SUMMARY
+          echo "| Servicio | Estado |" >> $GITHUB_STEP_SUMMARY
+          echo "|----------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| 🔧 PandaBack (API) | ✅ Lanzado |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🌐 PandaDawRazor (Frontend) | ✅ Lanzado |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "> Los servicios tardarán unos minutos en estar disponibles." >> $GITHUB_STEP_SUMMARY
